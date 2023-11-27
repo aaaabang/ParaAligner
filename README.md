@@ -20,7 +20,7 @@ python src/main.py -database <path of database file> -pattern <path of pattern f
 
 We provide a simple example to demonstrate the use of SmithWaterman_Par. The `input/database.txt` file gives the sequences and `input/pattern.txt` file gives the pattern of alignment(s).
 
-To run this demo, just run the following command:
+To run this demo, just run the following command after creating a virtual environment:
 
 ```
 ./run_script.sh  
