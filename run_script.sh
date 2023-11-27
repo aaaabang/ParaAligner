@@ -7,7 +7,7 @@
 VIRTUAL_ENV="./venv/bin/activate"
 
 # 设置你的 Python 脚本路径
-SCRIPT_PATH="./main.py"
+SCRIPT_PATH="./src/main.py"
 
 # 激活虚拟环境
 source $VIRTUAL_ENV
@@ -15,8 +15,8 @@ source $VIRTUAL_ENV
 pip3 install -r requirements.txt
 
 # 定义输入参数
-DATABASE_FILE="./database.txt"
-PATTERN_FILE="./pattern.txt"
+DATABASE_FILE="./input/database.txt"
+PATTERN_FILE="./input/pattern.txt"
 K=1
 
 # 获取虚拟环境中的 Python 命令路径
