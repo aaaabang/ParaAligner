@@ -23,4 +23,5 @@ K=1
 PYTHON_COMMAND=$(which python3)
 
 # 运行 Python 脚本并传递参数
-$PYTHON_COMMAND $SCRIPT_PATH -database $DATABASE_FILE -pattern $PATTERN_FILE --k $K
+mpiexec -n 4 $PYTHON_COMMAND $SCRIPT_PATH -database $DATABASE_FILE -pattern $PATTERN_FILE --k $K
+
