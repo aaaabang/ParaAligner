@@ -1,0 +1,9 @@
+{
+  "database": "data/databases/covid1.fna",
+  "patterns": [
+    "data/patterns/small.fna",
+    "data/patterns/medium.fna"
+  ],
+  "backup_folder": "backup",
+  "k": 3
+}
