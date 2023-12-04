@@ -4,6 +4,7 @@ import time
 from .base import StrategyBase
 from .client import Client
 from ..alg import files
+from .constant import key_value as kv
 
 class Master(StrategyBase):
 
@@ -51,7 +52,6 @@ class Master(StrategyBase):
             start_ind = job['start_ind']
             end_ind = job['end_ind']
 
-            data = job.encode()
             if job['subvec'] == 0:
                 # find a new slave for a new job
                 sent_flag = 0 # if find a idle slave, set 1 otherwise set 0
@@ -66,7 +66,9 @@ class Master(StrategyBase):
                     self.receive_queue.put(job)
 
             else:
-                slave = job['from'] # get the address of slave which possesses current chunk[start_ind, end_ind]
+                slave = self.job_slave[(start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
+                data[kv.TYPE] = kv.F_TYPE
+                data = job.encode()
                 self.client.send(slave, data)
               
     '''
@@ -115,7 +117,7 @@ class Master(StrategyBase):
             # done = data['done']
             # topKs = data['topKs']
 
-            keys = ['i_subvec', 'subvec', 'start_ind', 'end_ind', 'done', 'topKs']
+            keys = [kv.I_SUBVEC, kv.SUBVEC, kv.START, kv.END, kv.Done, kv.TOPKS]
             i_subv, subvec, start_ind, end_ind, done, topKs = map(itemgetter(*keys), [data] * len(keys))
             for i in range(len(subvec)):
                 self.slaves_states[addr]['subvec'][i_subv*self.msg_size + i] = subvec[i]
