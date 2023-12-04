@@ -6,6 +6,7 @@ from .master import Master
 class Client(ClientBase):
     addr_list = None # maintain a addr_list for nodes
     K = 0 # top-K
+
     def __init__(self, addr_list, addr, configs):
         super().__init__(addr)
         self.rank = addr_list.index(addr) # addr_list at index 0 is master
