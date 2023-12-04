@@ -11,7 +11,7 @@ class Master(StrategyBase):
     def __init__(self, client: Client):
         super().__init__(client)
         self.client = client
-        self.slaves_states = [{addr: {'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []}} for addr in range(len(Client.addr_list))]
+        self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []} for addr in range(len(Client.addr_list))]
         
         # map job to slave {(start_ind, end_ind): slave_addr}
         self.job_slave = {}
@@ -49,16 +49,18 @@ class Master(StrategyBase):
     def send_job_to_slave(self):
         while(not self.receive_queue.empty()):
             job = self.receive_queue.get()
-            start_ind = job['start_ind']
-            end_ind = job['end_ind']
+            start_ind = job[kv.START]
+            end_ind = job[kv.END]
 
             if job['subvec'] == 0:
                 # find a new slave for a new job
                 sent_flag = 0 # if find a idle slave, set 1 otherwise set 0
                 for slave in self.slaves_states:
                     if slave['idle'] == True and slave['alive'] == True:
-                        self.client.send(slave, data)
+                        data = job.encode()
                         self.job_slave[(start_ind, end_ind)] = slave['addr']
+                        slave['idle'] = False
+                        self.client.send(slave['addr'], data)
                         sent_flag = 1
                 
                 if not sent_flag:
@@ -96,13 +98,16 @@ class Master(StrategyBase):
             
             self.topKs = dict(sorted(self.topKs.items(), key=lambda item: item[1]))
 
-
+    def set_slave_idle(self, slave_addr):
+        for slave in self.slaves_states:
+            if(slave["addr"] == slave_addr):
+                slave['idle'] = True
+                return
     '''
     Master receives all data and put them into Queue
     If a package is a heartbeat from slaves, update slave_table
     '''
     def recv(self, addr, data):
-        # TODO
         data = data.decode()
         # rank = Client.addr_list.index(addr) # get slave's rank
         if data == "Heartbeat Response":
@@ -135,6 +140,7 @@ class Master(StrategyBase):
 
         else:
             # traceback phase
+            # TODO
             pass
 
         pass
