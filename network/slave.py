@@ -1,4 +1,4 @@
-from asyncio import Queue
+import queue
 from .base import StrategyBase
 from .client import Client
 
@@ -6,7 +6,7 @@ from .client import Client
 class Slave(StrategyBase):
     def __init__(self, client:Client):
         super().__init__(client)
-        self.job_queue = Queue.queue()
+        self.job_queue = queue.Queue()
         self.client = client
         master = Client.addr_list[0]
 
