@@ -10,8 +10,7 @@ class Master(StrategyBase):
     def __init__(self, client):
         super().__init__(client)
         self.client = client
-        self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []} for addr in range(len(self.client.addr_list))]
-        
+        self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []} for addr in self.client.addr_list if addr != client.addr]
         # map job to slave {(start_ind, end_ind): slave_addr}
         self.job_slave = {}
         # save jobs for slaves
@@ -28,9 +27,9 @@ class Master(StrategyBase):
         while((time.time() - self.last_heartbeat) < interval):
             pass
 
-        for slave in self.client.addr_list:
-            self.client.send(slave, b"Heartbeat")
-            print(f"Matser Heartbeat sent to {slave}")
+        for slave in self.slaves_states:
+            self.client.send(slave['addr'], b"Heartbeat")
+            print(f"Matser Heartbeat sent to {slave['addr']}")
 
         self.last_heartbeat = time.time()
 
@@ -108,10 +107,11 @@ class Master(StrategyBase):
     '''
     def recv(self, addr, data):
         data = data.decode()
-        # rank = Client.addr_list.index(addr) # get slave's rank
+        print("receive: ", data)
         if data == "Heartbeat Response":
             # update slave's state
-            self.slaves_states[addr]['update_time'] = time.time()
+            rank = self.client.addr_list.index(addr)
+            self.slaves_states[rank-1]['update_time'] = time.time()
             print(f"Receive Slave {addr} responsing Heartbeat")
         elif 'alignment' not in data:
             # fillmatrix phase
