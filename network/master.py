@@ -2,17 +2,15 @@ from operator import itemgetter
 import queue
 import time
 from .base import StrategyBase
-from .client import Client
-from ..alg import files
+from alg import files
 from .constant import key_value as kv
 
 class Master(StrategyBase):
 
-    def __init__(self, client: Client):
+    def __init__(self, client):
         super().__init__(client)
         self.client = client
-        self.slaves_states = [{addr: {'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []}} for addr in range(len(Client.addr_list))]
-        
+        self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []} for addr in self.client.addr_list if addr != client.addr]
         # map job to slave {(start_ind, end_ind): slave_addr}
         self.job_slave = {}
         # save jobs for slaves
@@ -22,16 +20,16 @@ class Master(StrategyBase):
         # send and receive 10 blocks at a time
         self.msg_size = 10
         
-        self.last_heartbeat = None
+        self.last_heartbeat = 0
         
     def send_heartbeat(self, interval=3):
 
         while((time.time() - self.last_heartbeat) < interval):
-            return
+            pass
 
-        for slave in Client.addr_list:
-            self.client.send(slave, b"Heartbeat")
-            print(f"Matser Heartbeat sent to {slave}")
+        for slave in self.slaves_states:
+            self.client.send(slave['addr'], b"Heartbeat")
+            print(f"Matser Heartbeat sent to {slave['addr']}")
 
         self.last_heartbeat = time.time()
 
@@ -49,16 +47,18 @@ class Master(StrategyBase):
     def send_job_to_slave(self):
         while(not self.receive_queue.empty()):
             job = self.receive_queue.get()
-            start_ind = job['start_ind']
-            end_ind = job['end_ind']
+            start_ind = job[kv.START]
+            end_ind = job[kv.END]
 
             if job['subvec'] == 0:
                 # find a new slave for a new job
                 sent_flag = 0 # if find a idle slave, set 1 otherwise set 0
                 for slave in self.slaves_states:
                     if slave['idle'] == True and slave['alive'] == True:
-                        self.client.send(slave, data)
+                        data = job.encode()
                         self.job_slave[(start_ind, end_ind)] = slave['addr']
+                        slave['idle'] = False
+                        self.client.send(slave['addr'], data)
                         sent_flag = 1
                 
                 if not sent_flag:
@@ -85,7 +85,7 @@ class Master(StrategyBase):
 
     def update_topKs(self, new_topKs):
         for new_pos, new_val in new_topKs.items():
-            if len(self.topKs) < Client.K:
+            if len(self.topKs) < self.client.K:
                 self.topKs[new_pos] = new_val
                 continue
 
@@ -96,18 +96,23 @@ class Master(StrategyBase):
             
             self.topKs = dict(sorted(self.topKs.items(), key=lambda item: item[1]))
 
-
+    def set_slave_idle(self, slave_addr):
+        for slave in self.slaves_states:
+            if(slave["addr"] == slave_addr):
+                slave['idle'] = True
+                return
     '''
     Master receives all data and put them into Queue
     If a package is a heartbeat from slaves, update slave_table
     '''
     def recv(self, addr, data):
-        # TODO
         data = data.decode()
-        # rank = Client.addr_list.index(addr) # get slave's rank
+        print("receive: ", data)
         if data == "Heartbeat Response":
             # update slave's state
-            self.slaves_states[addr]['update_time'] = time.time()
+            rank = self.client.addr_list.index(addr)
+            self.slaves_states[rank-1]['update_time'] = time.time()
+            print(f"Receive Slave {addr} responsing Heartbeat")
         elif 'alignment' not in data:
             # fillmatrix phase
             # i_subv = data['i_subvec'] # index of the received parts of rightmost column
@@ -132,9 +137,11 @@ class Master(StrategyBase):
                 # ready to send to another slave for work
                 files.save_block(self.slaves_states[addr]['subvec'], start_ind, end_ind)
                 files.save_topK(self.topKs)
+                self.set_slave_idle(addr)
 
         else:
             # traceback phase
+            # TODO
             pass
 
         pass

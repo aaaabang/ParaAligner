@@ -1,29 +1,27 @@
 import queue
+
+from alg import files
 from .base import StrategyBase
-from .client import Client
 import socket
-from alg.alg import fill_matrix, traceback
-from ..alg import files
-from .constant import key_value as kv
+from alg.alg import fill_matrix, trace_back
 import time
 
 
 class Slave(StrategyBase):
-    def __init__(self, client:Client):
+    def __init__(self, client):
         super().__init__(client)
         self.job_queue = queue.Queue()
         self.client = client
-        self.rank = client.rank # rank of this slave
-        self.job_queue = queue.Queue()
+        self.rank = client.rank # rank of this slave 
+        self.last_heartbeat_time = time.time()
         self.master_addr = client.master_addr
         master_addr = self.client.addr_list[0]
-        self.last_heartbeat_time = time.time()
 
 
     def send_heartbeat_response(self):
         # response heartbeat
         self.client.send(self.master_addr, b"Heartbeat Response")
-        print(f"Matser Heartbeat sent to {self.master_addr}")
+        print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
         
 
     # def check_if_master_alive(self, timeout=5):
@@ -77,10 +75,10 @@ class Slave(StrategyBase):
     #computing functions
     def handle_fillmatrix(self, data):
         # 执行 fillmatrix 任务
-        result, topK_dict = fill_matrix(data['subvec'], data['i_subvec'], data['start_ind'], data['end_ind'],Client.K)
+        result, topK_dict = fill_matrix(data['subvec'], data['i_subvec'], data['start_ind'], data['end_ind'],self.client.K)
 
         # 判断是否全部计算完成, 假设分为N块，每块计算完后，将结果存入files.py中的save_block函数
-        done = data['i_subvec'] == N-1
+        # done = data['i_subvec'] == N-1
 
         # 将结果和 top-K 得分发送回 Master
         response_data={'start_ind': result['start_ind'], 
@@ -100,7 +98,7 @@ class Slave(StrategyBase):
 
     def handle_traceback(self, data):
         # 执行 traceback 任务
-        result = traceback(data['top_k_i'], data['x'], data['y'], data['start_ind'], data['end_ind'])
+        result = trace_back(data['top_k_i'], data['x'], data['y'], data['start_ind'], data['end_ind'])
         # 将结果发送回 Master
         #TODO
 
@@ -111,6 +109,7 @@ class Slave(StrategyBase):
         #send to M
         # while True:
         #     self.recv()  # 接收并处理来自 Master 的数据
+
         #     self.check_if_master_alive()  # 检查 Master 是否存活
 
         #     try:
@@ -145,9 +144,11 @@ class Slave(StrategyBase):
         3. heartbeat
         '''
 
+
         if data:
             data = data.decode()
           
+            if data == 'Heartbeat':
             if data == 'Heartbeat':
                 # 处理心跳包
                 self.last_heartbeat_time = time.time()  # 更新最后一次心跳时间
