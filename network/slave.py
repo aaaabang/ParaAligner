@@ -14,8 +14,11 @@ class Slave(StrategyBase):
         self.job_queue = queue.Queue()
         self.client = client
         self.rank = client.rank # rank of this slave
-        master_addr = Client.addr_list[0]
+        self.job_queue = queue.Queue()
+        self.master_addr = client.master_addr
+        master_addr = self.client.addr_list[0]
         self.last_heartbeat_time = time.time()
+
 
     def send_heartbeat_response(self):
         # response heartbeat
@@ -23,40 +26,55 @@ class Slave(StrategyBase):
         print(f"Matser Heartbeat sent to {self.master_addr}")
         
 
-    def check_if_master_alive(self, timeout=5):
-        current_time = time.time()
-        if (current_time - self.last_heartbeat_time) > timeout:
-            # if the master timeout
-            print('Master is considered as timed out.')
-            self.handle_master_timeout()
+    # def check_if_master_alive(self, timeout=5):
+    #     current_time = time.time()
+    #     if (current_time - self.last_heartbeat_time) > timeout:
+    #         # if the master timeout
+    #         print('Master is considered as timed out.')
+    #         self.handle_master_timeout()
 
     #Crush Handling
     def handle_master_timeout(self):
         # handle master timeout
-        if self.rank == self.client.rank + 1:
+        if self.rank == Client.rank + 1:
             # if Slave's rank is equal to Master's rank+1
             self.send_remake_message()
             # become the new Master
+            self.become_new_master()
         else:
             # for other Slaves
+            # if Slave's rank is not equal to Master's rank+1
+            # connect to the new Master
             self.connect_to_new_master()
 
     def send_remake_message(self):
-        # 向其他 Slave 发送 remake 消息
-        # TODO
-
+        # Send a remake message to other Slaves to inform them of the master's failure
+        for slave_addr in Client.addr_list[1:]:  # the Master is at index 0
+            if slave_addr != self.client.addr:  # Don't send a message to yourself
+                self.client.send(slave_addr, ({'type': 'remake'}).encode())
+        pass
+                
+    def become_new_master(self):
+        # Actions to become the new Master
+        # This would typically involve initializing Master-related attributes and taking over Master's responsibilities
+        # It might also involve starting to listen for messages from Slaves, etc.
+        # TODO: Implement the logic to initialize this Slave as the new Master
+        # Initialize attributes and state for the new Master.
         pass
 
     def connect_to_new_master(self):
-        # 连接新的 Master
+        # 如果不是新的master, 则连接新的 Master
         # TODO
         pass
 
     def handle_remake_command(self):
-        # 处理收到的 remake 命令
+        # 处理从master收到的 remake 命令
         # TODO
         pass
 
+    
+
+    #computing functions
     def handle_fillmatrix(self, data):
         # 执行 fillmatrix 任务
         result, topK_dict = fill_matrix(data['subvec'], data['i_subvec'], data['start_ind'], data['end_ind'],Client.K)
@@ -91,24 +109,25 @@ class Slave(StrategyBase):
         # TODO
         #call alg to fill matrix, traceback
         #send to M
-        while True:
-            self.recv()  # 接收并处理来自 Master 的数据
-            self.check_if_master_alive()  # 检查 Master 是否存活
+        # while True:
+        #     self.recv()  # 接收并处理来自 Master 的数据
+        #     self.check_if_master_alive()  # 检查 Master 是否存活
 
-            try:
-                # 从工作队列中获取任务并处理
-                task = self.job_queue.get(timeout=1)  # 设置超时以避免阻塞
-                if task['type'] == 'fillmatrix':
-                    self.handle_fillmatrix(task)
-                elif task['type'] == 'traceback':
-                    self.handle_traceback(task)
-            except queue.Empty:
-                # 如果队列为空，则继续循环
-                continue
+        #     try:
+        #         # 从工作队列中获取任务并处理
+        #         task = self.job_queue.get(timeout=1)  # 设置超时以避免阻塞
+        #         if task['type'] == 'fillmatrix':
+        #             self.handle_fillmatrix(task)
+        #         elif task['type'] == 'traceback':
+        #             self.handle_traceback(task)
+        #     except queue.Empty:
+        #         # 如果队列为空，则继续循环
+        #         continue
+        pass
 
 
     #从master接收数据
-    def recv(self,data):
+    def recv(self, addr, data):
         # 从Master接收数据
         '''
         从master收到的数据类型有 3 种:
@@ -126,7 +145,6 @@ class Slave(StrategyBase):
         3. heartbeat
         '''
 
-        data = self.slave_socket.recv(1024)
         if data:
             data = data.decode()
           
