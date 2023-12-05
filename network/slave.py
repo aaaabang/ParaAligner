@@ -1,7 +1,9 @@
 import queue
+
+from alg import files
 from .base import StrategyBase
 import socket
-# from alg.alg import fill_matrix, traceback
+from alg.alg import fill_matrix, trace_back
 import time
 
 
@@ -57,10 +59,10 @@ class Slave(StrategyBase):
 
     def handle_fillmatrix(self, data):
         # 执行 fillmatrix 任务
-        result, topK_dict = fill_matrix(data['subvec'], data['i_subvec'], data['start_ind'], data['end_ind'],Client.K)
+        result, topK_dict = fill_matrix(data['subvec'], data['i_subvec'], data['start_ind'], data['end_ind'],self.client.K)
 
         # 判断是否全部计算完成, 假设分为N块，每块计算完后，将结果存入files.py中的save_block函数
-        done = data['i_subvec'] == N-1
+        # done = data['i_subvec'] == N-1
 
         # 将结果和 top-K 得分发送回 Master
         response_data={'start_ind': result['start_ind'], 
@@ -80,7 +82,7 @@ class Slave(StrategyBase):
 
     def handle_traceback(self, data):
         # 执行 traceback 任务
-        result = traceback(data['top_k_i'], data['x'], data['y'], data['start_ind'], data['end_ind'])
+        result = trace_back(data['top_k_i'], data['x'], data['y'], data['start_ind'], data['end_ind'])
         # 将结果发送回 Master
         #TODO
 
