@@ -2,16 +2,15 @@ from operator import itemgetter
 import queue
 import time
 from .base import StrategyBase
-from .client import Client
-from ..alg import files
+from alg import files
 from .constant import key_value as kv
 
 class Master(StrategyBase):
 
-    def __init__(self, client: Client):
+    def __init__(self, client):
         super().__init__(client)
         self.client = client
-        self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []} for addr in range(len(Client.addr_list))]
+        self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []} for addr in range(len(self.client.addr_list))]
         
         # map job to slave {(start_ind, end_ind): slave_addr}
         self.job_slave = {}
@@ -22,14 +21,14 @@ class Master(StrategyBase):
         # send and receive 10 blocks at a time
         self.msg_size = 10
         
-        self.last_heartbeat = None
+        self.last_heartbeat = 0
         
     def send_heartbeat(self, interval=3):
 
         while((time.time() - self.last_heartbeat) < interval):
             pass
 
-        for slave in Client.addr_list:
+        for slave in self.client.addr_list:
             self.client.send(slave, b"Heartbeat")
             print(f"Matser Heartbeat sent to {slave}")
 
@@ -87,7 +86,7 @@ class Master(StrategyBase):
 
     def update_topKs(self, new_topKs):
         for new_pos, new_val in new_topKs.items():
-            if len(self.topKs) < Client.K:
+            if len(self.topKs) < self.client.K:
                 self.topKs[new_pos] = new_val
                 continue
 
@@ -113,6 +112,7 @@ class Master(StrategyBase):
         if data == "Heartbeat Response":
             # update slave's state
             self.slaves_states[addr]['update_time'] = time.time()
+            print(f"Receive Slave {addr} responsing Heartbeat")
         elif 'alignment' not in data:
             # fillmatrix phase
             # i_subv = data['i_subvec'] # index of the received parts of rightmost column

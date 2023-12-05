@@ -1,33 +1,32 @@
 import queue
 from .base import StrategyBase
-from .client import Client
 import socket
-from alg.alg import fill_matrix, traceback
+# from alg.alg import fill_matrix, traceback
 import time
 
 
 class Slave(StrategyBase):
-    def __init__(self, client:Client):
+    def __init__(self, client):
         super().__init__(client)
         self.job_queue = queue.Queue()
         self.client = client
         self.rank = client.rank # rank of this slave
-        self.master_addr = master_addr
-        master_addr = Client.addr_list[0]
+        self.master_addr = client.master_addr
+        master_addr = self.client.addr_list[0]
 
 
     def send_heartbeat_response(self):
         # response heartbeat
         self.client.send(self.master_addr, b"Heartbeat Response")
-        print(f"Matser Heartbeat sent to {self.master_addr}")
+        print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
         
 
-    def check_if_master_alive(self, timeout=5):
-        current_time = time.time()
-        if (current_time - self.last_heartbeat_time) > timeout:
-            # if the master timeout
-            print('Master is considered as timed out.')
-            self.handle_master_timeout()
+    # def check_if_master_alive(self, timeout=5):
+    #     current_time = time.time()
+    #     if (current_time - self.last_heartbeat_time) > timeout:
+    #         # if the master timeout
+    #         print('Master is considered as timed out.')
+    #         self.handle_master_timeout()
 
     #Crush Handling
     def handle_master_timeout(self):
@@ -59,25 +58,25 @@ class Slave(StrategyBase):
         # TODO
         #call alg to fill matrix, traceback
         #send to M
-        while True:
-            self.recv()  # 接收并处理来自 Master 的数据
-            self.check_if_master_alive()  # 检查 Master 是否存活
+        # while True:
+        #     # self.recv()  # 接收并处理来自 Master 的数据
+        #     self.check_if_master_alive()  # 检查 Master 是否存活
 
-            try:
-                # 从工作队列中获取任务并处理
-                task = self.job_queue.get(timeout=1)  # 设置超时以避免阻塞
-                if task['type'] == 'fillmatrix':
-                    self.perform_fillmatrix(task)
-                elif task['type'] == 'traceback':
-                    self.perform_traceback(task)
-            except queue.Empty:
-                # 如果队列为空，则继续循环
-                continue
+        #     try:
+        #         # 从工作队列中获取任务并处理
+        #         task = self.job_queue.get(timeout=1)  # 设置超时以避免阻塞
+        #         if task['type'] == 'fillmatrix':
+        #             self.perform_fillmatrix(task)
+        #         elif task['type'] == 'traceback':
+        #             self.perform_traceback(task)
+        #     except queue.Empty:
+        #         # 如果队列为空，则继续循环
+        #         continue
         pass
 
 
     #从master接收数据
-    def recv(self,data):
+    def recv(self, addr, data):
         # 从Master接收数据
         '''
         从master收到的数据类型有 3 种:
@@ -95,11 +94,11 @@ class Slave(StrategyBase):
         3. heartbeat
         '''
 
-        data = self.slave_socket.recv(1024)
+        # data = self.slave_socket.recv(1024)
         if data:
             data = data.decode()
           
-            if data == 'heartbeat':
+            if data == 'Heartbeat':
                 # 处理心跳包
                 self.send_heartbeat_response()
             elif data['type'] == 'fillmatrix':

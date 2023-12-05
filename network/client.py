@@ -12,7 +12,7 @@ class Client(ClientBase):
         self.strategy = StrategyBase(self)
         self.state = None
         self.addr_list = addr_list
-
+        self.master_addr = addr_list[0]
         self.K = configs['k']#topK
         
         if self.rank == 0:
