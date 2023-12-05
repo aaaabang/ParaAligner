@@ -1,5 +1,5 @@
 import queue
-
+from .client import Client
 from alg import files
 from .base import StrategyBase
 import socket
@@ -81,18 +81,18 @@ class Slave(StrategyBase):
         # done = data['i_subvec'] == N-1
 
         # 将结果和 top-K 得分发送回 Master
-        response_data={'start_ind': result['start_ind'], 
-        'end_ind': result['end_ind'], 
-        'i_subvec': data['i_subvec'], 
-        'subvec': result['subvec'], 
-        'result': result['result'], 
-        'topK': topK_dict,
-        'done': done}
+        # response_data={'start_ind': result['start_ind'], 
+        # 'end_ind': result['end_ind'], 
+        # 'i_subvec': data['i_subvec'], 
+        # 'subvec': result['subvec'], 
+        # 'result': result['result'], 
+        # 'topK': topK_dict,
+        # 'done': done}
         # 只发送算好矩阵的最右侧一列
         # 全部算完后即i_subvec=N时，发送done=true, 其余时候发送done=false
         # 将算好的矩阵存入files.py中的save_block函数
-        if done:
-            files.save_block(result)
+        # if done:
+        #     files.save_block(result)
         # TODO
 
 
