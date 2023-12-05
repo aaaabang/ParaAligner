@@ -4,8 +4,6 @@ from .master import Master
 
 
 class Client(ClientBase):
-    addr_list = None # maintain a addr_list for nodes
-    K = 0 # top-K
 
     def __init__(self, addr_list, addr, configs):
         super().__init__(addr)
@@ -13,9 +11,9 @@ class Client(ClientBase):
         self.configs = configs
         self.strategy = StrategyBase(self)
         self.state = None
-        Client.addr_list = addr_list
+        self.addr_list = addr_list
 
-        K = configs['k']
+        self.K = configs['k']#topK
         
         if self.rank == 0:
             self.set_state('M')

@@ -27,7 +27,7 @@ class Master(StrategyBase):
     def send_heartbeat(self, interval=3):
 
         while((time.time() - self.last_heartbeat) < interval):
-            return
+            pass
 
         for slave in Client.addr_list:
             self.client.send(slave, b"Heartbeat")
@@ -137,6 +137,7 @@ class Master(StrategyBase):
                 # ready to send to another slave for work
                 files.save_block(self.slaves_states[addr]['subvec'], start_ind, end_ind)
                 files.save_topK(self.topKs)
+                self.set_slave_idle(addr)
 
         else:
             # traceback phase
