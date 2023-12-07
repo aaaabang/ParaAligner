@@ -6,6 +6,10 @@ from .constant import key_value as kv
 from alg import files
 
 
+from .master import Master
+
+
+
 class Slave(StrategyBase):
     def __init__(self, client):
         super().__init__(client)
@@ -17,6 +21,7 @@ class Slave(StrategyBase):
         master_addr = self.client.addr_list[0]
 
         # 停止任务的标志
+        self.master_timed_out = False
         self.stop_current_task = False
 
 #already done
@@ -28,50 +33,55 @@ class Slave(StrategyBase):
 
     def check_if_master_alive(self, timeout=5):
         current_time = time.time()
-        if (current_time - self.last_heartbeat_time) > timeout:
+        if (current_time - self.last_heartbeat_time) > timeout and not self.master_timed_out:
             # if the master timeout
             print('Master is considered as timed out.')
             self.handle_master_timeout()
 
     #Crush Handling
     def handle_master_timeout(self):
+        self.master_timed_out = True
         print("Handling master timeout...")
         # 如果slave rank等于master rank+1, 则成为新的master
         master_rank = 0
         if self.rank == master_rank + 1: 
             # if Slave's rank is equal to Master's rank+1, then become the new Master
             self.become_new_master()    
+        else:
+            self.handle_remake_command()
+
         time.sleep(10)
         
-
-    def send_remake_message(self):
-        # Send a remake message to other Slaves to inform them of the master's failure
-        for slave_addr in self.client.addr_list[1:]:  # the Master is at index 0
-            if slave_addr != self.client.addr:  # Don't send a message to yourself
-                self.client.send(slave_addr, b'remake')
-                print(f"Sent 'remake' message to {slave_addr}")
-        pass
-               
     def become_new_master(self):
+    # 从磁盘重新启动并作为master
         print(f"Slave {self.rank} is becoming the new Master.")
-        # update rank as 0
-        self.client.rank = 0
-        # 设置状态为 'M'，以变为 Master
-        self.client.set_state('M')
-        self.send_remake_message()
-        print("Initialization complete. New Master is now operational.")
-        pass
-
-
+       # 重置工作状态
+        self.job_queue.queue.clear()
+        self.stop_current_task = False
+        # 设置为master
+        self.client.close()
+        self.client.reopen_socket()  # 重新打开socket
+        self.client = Master(self.client)  # 创建一个新的Master对象
+        print(f"Slave {self.rank} is becoming the new Master.")
+        self.client.iter()  # 开始执行Master的任务
+       
+    
     def handle_remake_command(self):
         # 处理从master收到的 remake 命令
         print(f"Slave {self.rank} received 'remake' message. Preparing to reset and connect to the new Master.")
+        
         self.stop_current_task = True  # 设置停止当前任务的标志
         self.job_queue.queue.clear()  # 清空工作队列
         print("clear job queue")
-        # self.connect_to_new_master()
-        print("Reset complete. Ready to connect to the new Master.")
+        
+        self.connect_to_new_master()
+        print("waiting for connecting to new master")
+        
 
+    def connect_to_new_master(self):
+        # 重新连接到master, 设置为false
+        self.master_timed_out = False
+        print("Reset complete. Ready to connect to the new Master.")
 
     
 
@@ -102,7 +112,6 @@ class Slave(StrategyBase):
         # TODO
         pass
 
-
     def handle_traceback(self, data):
         # 执行 traceback 任务
         result = trace_back(data['top_k_i'], data['x'], data['y'], data['start_ind'], data['end_ind'])
@@ -129,6 +138,7 @@ class Slave(StrategyBase):
            # 处理任务队列中的任务
             if not self.job_queue.empty():
                 task = self.job_queue.get()
+
                 if self.stop_current_task:
                     print("Slave is stopping current task.")
                     continue  # 跳过当前任务
@@ -144,22 +154,6 @@ class Slave(StrategyBase):
 
     #从master接收数据
     def recv(self, addr, data):
-        '''
-        从master收到的数据类型有 3 种:
-        1. heartbeat
-        2. remake
-        3. task
-            让slave执行fillmatrix任务
-            start_ind
-            end_ind
-            subvec
-            让slave执行traceback任务
-            top_k_i: value
-            x,
-            y,
-            start_ind
-            end_ind
-        '''
         if data:
             data = data.decode()
             print("receive: ", data)
@@ -168,8 +162,8 @@ class Slave(StrategyBase):
                 self.last_heartbeat_time = time.time()  # 更新最后一次心跳时间
                 self.send_heartbeat_response()
                 print("Slave received heartbeat from Master")
-            elif data == 'remake':
-                self.handle_remake_command()
+            # elif data == 'remake':
+            #     self.handle_remake_command()
             else:
                 self.job_queue.put(data)
             # elif data ['type']== 'remake':
