@@ -1,10 +1,9 @@
 import queue
-from .client import Client
-from alg import files
 from .base import StrategyBase
-import socket
 from alg.alg import fill_matrix, trace_back
 import time
+from .constant import key_value as kv
+from alg import files
 
 
 class Slave(StrategyBase):
@@ -17,58 +16,62 @@ class Slave(StrategyBase):
         self.master_addr = client.master_addr
         master_addr = self.client.addr_list[0]
 
+        # 停止任务的标志
+        self.stop_current_task = False
 
+#already done
     def send_heartbeat_response(self):
         # response heartbeat
         self.client.send(self.master_addr, b"Heartbeat Response")
         print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
         
 
-    # def check_if_master_alive(self, timeout=5):
-    #     current_time = time.time()
-    #     if (current_time - self.last_heartbeat_time) > timeout:
-    #         # if the master timeout
-    #         print('Master is considered as timed out.')
-    #         self.handle_master_timeout()
+    def check_if_master_alive(self, timeout=5):
+        current_time = time.time()
+        if (current_time - self.last_heartbeat_time) > timeout:
+            # if the master timeout
+            print('Master is considered as timed out.')
+            self.handle_master_timeout()
 
     #Crush Handling
     def handle_master_timeout(self):
-        # handle master timeout
-        if self.rank == Client.rank + 1:
-            # if Slave's rank is equal to Master's rank+1
-            self.send_remake_message()
-            # become the new Master
-            self.become_new_master()
-        else:
-            # for other Slaves
-            # if Slave's rank is not equal to Master's rank+1
-            # connect to the new Master
-            self.connect_to_new_master()
+        print("Handling master timeout...")
+        # 如果slave rank等于master rank+1, 则成为新的master
+        master_rank = 0
+        if self.rank == master_rank + 1: 
+            # if Slave's rank is equal to Master's rank+1, then become the new Master
+            self.become_new_master()    
+        time.sleep(10)
+        
 
     def send_remake_message(self):
         # Send a remake message to other Slaves to inform them of the master's failure
-        for slave_addr in Client.addr_list[1:]:  # the Master is at index 0
+        for slave_addr in self.client.addr_list[1:]:  # the Master is at index 0
             if slave_addr != self.client.addr:  # Don't send a message to yourself
-                self.client.send(slave_addr, ({'type': 'remake'}).encode())
+                self.client.send(slave_addr, b'remake')
+                print(f"Sent 'remake' message to {slave_addr}")
         pass
-                
+               
     def become_new_master(self):
-        # Actions to become the new Master
-        # This would typically involve initializing Master-related attributes and taking over Master's responsibilities
-        # It might also involve starting to listen for messages from Slaves, etc.
-        # TODO: Implement the logic to initialize this Slave as the new Master
-        # Initialize attributes and state for the new Master.
+        print(f"Slave {self.rank} is becoming the new Master.")
+        # update rank as 0
+        self.client.rank = 0
+        # 设置状态为 'M'，以变为 Master
+        self.client.set_state('M')
+        self.send_remake_message()
+        print("Initialization complete. New Master is now operational.")
         pass
 
-    def connect_to_new_master(self):
-        # 如果不是新的master, 则连接新的 Master
-        # TODO
-        pass
 
     def handle_remake_command(self):
         # 处理从master收到的 remake 命令
-        # TODO
-        pass
+        print(f"Slave {self.rank} received 'remake' message. Preparing to reset and connect to the new Master.")
+        self.stop_current_task = True  # 设置停止当前任务的标志
+        self.job_queue.queue.clear()  # 清空工作队列
+        print("clear job queue")
+        # self.connect_to_new_master()
+        print("Reset complete. Ready to connect to the new Master.")
+
 
     
 
@@ -80,20 +83,24 @@ class Slave(StrategyBase):
         # 判断是否全部计算完成, 假设分为N块，每块计算完后，将结果存入files.py中的save_block函数
         # done = data['i_subvec'] == N-1
 
-        # 将结果和 top-K 得分发送回 Master
-        # response_data={'start_ind': result['start_ind'], 
-        # 'end_ind': result['end_ind'], 
-        # 'i_subvec': data['i_subvec'], 
-        # 'subvec': result['subvec'], 
-        # 'result': result['result'], 
-        # 'topK': topK_dict,
-        # 'done': done}
+        # response_data = {
+        #     'start_ind': result['start_ind'],
+        #     'end_ind': result['end_ind'],
+        #     'i_subvec': data['i_subvec'],
+        #     'subvec': result['subvec'],
+        #     'result': result['result'],
+        #     'topK': topK_dict,
+        #     'done': done
+        # }
+
+
         # 只发送算好矩阵的最右侧一列
         # 全部算完后即i_subvec=N时，发送done=true, 其余时候发送done=false
         # 将算好的矩阵存入files.py中的save_block函数
         # if done:
         #     files.save_block(result)
         # TODO
+        pass
 
 
     def handle_traceback(self, data):
@@ -102,58 +109,76 @@ class Slave(StrategyBase):
         # 将结果发送回 Master
         #TODO
 
+        # top_k_i: value
+        # x:
+        # y:
+        # start_ind
+        # end_ind
+        pass
+
+
 
     def iter(self):
         # TODO
-        #call alg to fill matrix, traceback
-        #send to M
-        # while True:
-        #     self.recv()  # 接收并处理来自 Master 的数据
+        # 检查是否收到master的心跳包，如果超时，则处理master超时
+        # call alg to fill matrix, traceback
+        # send to M
+        while True:
+            # 检查是否收到master的心跳包，如果超时，则处理master超时
+            self.check_if_master_alive(timeout=5)
+           # 处理任务队列中的任务
+            if not self.job_queue.empty():
+                task = self.job_queue.get()
+                if self.stop_current_task:
+                    print("Slave is stopping current task.")
+                    continue  # 跳过当前任务
 
-        #     self.check_if_master_alive()  # 检查 Master 是否存活
+                if task['type'] == 'fillmatrix':
+                    self.handle_fillmatrix(task)
+                elif task['type'] == 'traceback':
+                    self.handle_traceback(task)
 
-        #     try:
-        #         # 从工作队列中获取任务并处理
-        #         task = self.job_queue.get(timeout=1)  # 设置超时以避免阻塞
-        #         if task['type'] == 'fillmatrix':
-        #             self.handle_fillmatrix(task)
-        #         elif task['type'] == 'traceback':
-        #             self.handle_traceback(task)
-        #     except queue.Empty:
-        #         # 如果队列为空，则继续循环
-        #         continue
-        pass
+            time.sleep(0.1)  # 休眠0.1秒，避免CPU占用过高
+
 
 
     #从master接收数据
     def recv(self, addr, data):
-        # 从Master接收数据
         '''
         从master收到的数据类型有 3 种:
-
-        1. 让slave执行fillmatrix任务
+        1. heartbeat
+        2. remake
+        3. task
+            让slave执行fillmatrix任务
             start_ind
             end_ind
             subvec
-        2. 让slave执行traceback任务
+            让slave执行traceback任务
             top_k_i: value
             x,
             y,
             start_ind
             end_ind
-        3. heartbeat
         '''
-
-
         if data:
             data = data.decode()
+            print("receive: ", data)
             if data == 'Heartbeat':
                 # 处理心跳包
                 self.last_heartbeat_time = time.time()  # 更新最后一次心跳时间
                 self.send_heartbeat_response()
-            elif data['type'] == 'fillmatrix':
-                # 添加到工作队列
+                print("Slave received heartbeat from Master")
+            elif data == 'remake':
+                self.handle_remake_command()
+            else:
                 self.job_queue.put(data)
-            elif data['type'] == 'traceback':
-                # 添加到 工作队列
-                self.job_queue.put(data)
+            # elif data ['type']== 'remake':
+            #     # 处理从master收到的 remake 命令
+            #     self.job_queue.put(data)
+            # elif data['type'] == 'fillmatrix':
+            #     # 添加到工作队列
+            #     self.job_queue.put(data)
+            # elif data['type'] == 'traceback':
+            #     # 添加到 工作队列
+            #     self.job_queue.put(data)
+    
