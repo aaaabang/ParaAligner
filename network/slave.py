@@ -83,7 +83,6 @@ class Slave(StrategyBase):
         # 判断是否全部计算完成, 假设分为N块，每块计算完后，将结果存入files.py中的save_block函数
         # done = data['i_subvec'] == N-1
 
-
         # response_data = {
         #     'start_ind': result['start_ind'],
         #     'end_ind': result['end_ind'],
@@ -93,6 +92,7 @@ class Slave(StrategyBase):
         #     'topK': topK_dict,
         #     'done': done
         # }
+
 
         # 只发送算好矩阵的最右侧一列
         # 全部算完后即i_subvec=N时，发送done=true, 其余时候发送done=false
