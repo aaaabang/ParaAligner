@@ -66,7 +66,6 @@ class Slave(StrategyBase):
         num_subvecs += remainder > 0
 
         #如果是第一块, upvec传空, 否则传上一块的最后一行
-        # 把pattern划分成 subvec_length 长度的子块
         up_vec = [0 for _ in range(M)] if data['i_subvec'] == 0 else self.previous_bottom_vec
 
         #for data['i_subvec'] in range(num_subvecs):
