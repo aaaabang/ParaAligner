@@ -19,9 +19,10 @@ class Master(StrategyBase):
         self.topKs = {}
         # send and receive 10 blocks at a time
         self.msg_size = 10
-        
+        self.block_size = 50#TODO
         self.last_heartbeat = 0
         
+    
     def send_heartbeat(self, interval=3):
 
         while((time.time() - self.last_heartbeat) < interval):
@@ -107,12 +108,11 @@ class Master(StrategyBase):
     '''
     def recv(self, addr, data):
         data = data.decode()
-        print("receive: ", data)
+        print(f"receive: {data} from {addr}")
         if data == "Heartbeat Response":
             # update slave's state
             rank = self.client.addr_list.index(addr)
             self.slaves_states[rank-1]['update_time'] = time.time()
-            print(f"Receive Slave {addr} responsing Heartbeat")
         elif 'alignment' not in data:
             # fillmatrix phase
             # i_subv = data['i_subvec'] # index of the received parts of rightmost column
@@ -129,7 +129,7 @@ class Master(StrategyBase):
             
             self.update_topKs(new_topKs=topKs)
 
-            job_item = {'subvec': subvec, 'start_ind': end_ind + 1, "end_ind": end_ind + self.msg_size, 'i_subv': i_subv}
+            job_item = {'subvec': subvec, 'start_ind': end_ind + 1, "end_ind": end_ind + self.block_size, 'i_subv': i_subv}
             self.receive_queue.put(job_item)
             
             if done:

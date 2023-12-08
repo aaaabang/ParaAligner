@@ -10,5 +10,26 @@ def write_fna(seq, file_path, id='', description=''):
 
 
 def read_fna(file_path, begin_ind, end_ind):
-    raise NotImplementedError
-    # TODO
+    if begin_ind >= end_ind:
+        raise ValueError("The start index must be less than the end index.")
+
+    sequence = ''
+    with open(file_path, 'rb') as file:
+        # Skip the header line that starts with '>'
+        line = file.readline()
+        while line.startswith(b'>'):
+            line = file.readline()
+
+        # Move to the start index position
+        file.seek(begin_ind, 1)  # Move from the current position
+
+        # Read data of a specific length
+        chars_read = 0
+        while chars_read < end_ind - begin_ind:
+            char = file.read(1)
+            if char in [b'\n', b'\r']:
+                continue  # Ignore newline and carriage return characters
+            sequence += char.decode('utf-8')  # Decode as a string
+            chars_read += 1
+
+    return sequence

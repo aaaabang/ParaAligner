@@ -84,6 +84,7 @@ class Slave(StrategyBase):
 #         master_addr = self.client.addr_list[1]
 #         print("Reset complete. Ready to connect to the new Master.")
 
+
     
 
     #computing functions
@@ -119,6 +120,7 @@ class Slave(StrategyBase):
             files.save_block(result)
 
         pass
+
 
     def send_fillmatirx(self, data):
         # 将结果发送回 Master
