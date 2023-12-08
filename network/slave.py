@@ -132,7 +132,6 @@ class Slave(StrategyBase):
             data = data.decode()
           
             if data == 'Heartbeat':
-            if data == 'Heartbeat':
                 # 处理心跳包
                 self.last_heartbeat_time = time.time()  # 更新最后一次心跳时间
                 self.send_heartbeat_response()

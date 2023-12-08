@@ -12,3 +12,8 @@ def write_fna(seq, file_path, id='', description=''):
 def read_fna(file_path, begin_ind, end_ind):
     raise NotImplementedError
     # TODO
+
+def get_fna_len(file_path):
+    #TODO
+    #return the lenghth of the database
+    pass
