@@ -92,9 +92,7 @@ class Slave(StrategyBase):
         #
         # 执行 fillmatrix 任务
         result, topK_dict = fill_matrix(data['subvec'], data['i_subvec'], data['start_ind'], data['end_ind'],self.client.K)
-        #result 是算好的矩阵
-        #fillmatrix 返回矩阵的最右一侧和最后一行, 以及topK_dict
-        # slave将最右一侧和topK_dict发送给master, 自己保存最后一行用来算下一个矩阵
+
 
         # 判断是否全部计算完成, 假设分为N块，每块计算完后，将结果存入files.py中的save_block函数
         done = data['i_subvec'] == N-1
