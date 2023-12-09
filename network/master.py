@@ -1,5 +1,7 @@
+import json
 import math
 from operator import itemgetter
+import pickle
 import queue
 import time
 from .base import StrategyBase
@@ -47,7 +49,7 @@ class Master(StrategyBase):
                     size = min(remain_subvec_size, self.msg_size)
                     subvec = np.zeros(size)
                     j += 1
-                    
+
                 job_item = {
                     kv.SUBVEC: subvec, 
                     kv.START: 0, 
@@ -64,7 +66,9 @@ class Master(StrategyBase):
             pass
 
         for slave in self.slaves_states:
-            self.client.send(slave['addr'], b"Heartbeat")
+            data = "Heartbeat"
+            data = pickle.dumps(data)
+            self.client.send(slave['addr'], data)
             print(f"Matser Heartbeat sent to {slave['addr']}")
 
         self.last_heartbeat = time.time()
@@ -86,7 +90,8 @@ class Master(StrategyBase):
             start_ind = job[kv.START]
             end_ind = job[kv.END]
             i_th_pattern = job[kv.Ith_PATTERN]
-            if job['subvec'] == 0:
+            print(f"send_job {job}")
+            if job[kv.I_SUBVEC] == 0:
                 # find a new slave for a new job
                 sent_flag = 0 # if find a idle slave, set 1 otherwise set 0
                 for slave in self.slaves_states:
@@ -95,7 +100,8 @@ class Master(StrategyBase):
                         self.job_slave[(i_th_pattern, start_ind, end_ind)] = slave['addr']
                         slave['idle'] = False
                         # send to slave
-                        data = job.encode()
+                        # data = job.encode()
+                        data = pickle.dumps(job)
                         self.client.send(slave['addr'], data)
                         # see if job is sent successfully, if not, put it back into queue
                         sent_flag = 1

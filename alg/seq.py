@@ -37,9 +37,9 @@ def read_fna(file_path, begin_ind, end_ind):
     return sequence
 
 
-print("p:",read_fna("data/patterns/small.fna", 0, 5))
-print("da", read_fna("data/databases/covid1.fna", 0, 5))
+# print("p:",read_fna("data/patterns/small.fna", 0, 5))
+# print("da", read_fna("data/databases/covid1.fna", 0, 5))
 
 def get_fna_length(file_path):
     #TODO
-    pass
+    return 10

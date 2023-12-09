@@ -1,3 +1,4 @@
+import pickle
 import queue
 from .base import StrategyBase
 from alg.alg import fill_matrix, trace_back
@@ -256,7 +257,7 @@ class Slave(StrategyBase):
     #从master接收数据
     def recv(self, addr, data):
         if data:
-            data = data.decode()
+            data = pickle.loads(data)
             print("receive: ", data)
             if data == 'Heartbeat':
                 # 处理心跳包

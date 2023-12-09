@@ -19,4 +19,4 @@ TOPK_POS = "topk_pos"
 ALI = "alignment"
 #config
 DATABASE = "database"
-PATTERN = "pattern"
+PATTERN = "patterns"
