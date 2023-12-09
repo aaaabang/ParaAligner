@@ -16,7 +16,7 @@ Ith_PATTERN = "i_th_pattern"
 T_TYPE = "traceback"
 TOPK_VALUE = "topk_value"
 TOPK_POS = "topk_pos"
-
+ALI = "alignment"
 #config
 DATABASE = "database"
 PATTERN = "pattern"

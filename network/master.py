@@ -17,7 +17,7 @@ class Master(StrategyBase):
         self.job_slave = {}
         # save jobs for slaves
         self.receive_queue = queue.Queue()
-        # top-k value and theri pos {i_th_pattern: {pos: val} }
+        # top-k value and theri pos {i_th_pattern: [{'pos', 'val', 'start_ind', 'end_ind'}] }
         self.topKs = {}
         
         # send and receive a msg of 50 grids at a time within a subvector
@@ -115,19 +115,21 @@ class Master(StrategyBase):
         pass
 
 
-    def update_topKs(self, i_th_pattern, new_topKs):
-        i_topKs = self.topKs[i_th_pattern]
-        for new_pos, new_val in new_topKs.items():
+    def update_topKs(self, i_th_pattern, new_topKs, start_ind, end_ind):
+        i_topKs = self.topKs.setdefault(i_th_pattern, [])
+        for new_topk in new_topKs:
+            new_pos = new_topk[1]
+            new_val = new_topk[0]
             if len(i_topKs) < self.client.K:
-                i_topKs[new_pos] = new_val
+                i_topKs.append({"pos": new_pos, "val": new_val, kv.START: start_ind, kv.END: end_ind})
                 continue
 
-            min_pos, min_value = next(iter(i_topKs.items()))
             if new_val > min_value:
-                i_topKs[new_pos] = self.topKs.pop(min_pos, None)
-                i_topKs[new_pos] = new_val
+                i_topKs[0] = {"pos": new_pos, "val": new_val, kv.START: start_ind, kv.END: end_ind}
             
-            self.topKs[i_th_pattern] = dict(sorted(i_topKs.items(), key=lambda item: item[1]))
+            # 按照 "val" 键进行排序
+            sorted_i_topKs = sorted(i_topKs, key=lambda x: x["val"])
+            self.topKs[i_th_pattern] = sorted_i_topKs
 
     def set_slave_idle(self, slave_addr):
         for slave in self.slaves_states:
@@ -136,15 +138,17 @@ class Master(StrategyBase):
                 return
     
     def init_traceback(self, i_th_pattern):
-        i_topKs = self.topKs[i_th_pattern]
-        for pos, value in i_topKs.items():
+        i_topKs = self.topKs[i_th_pattern] # this is a [{}]
+        for topk in i_topKs:
             job_item = {}
             job_item[kv.TYPE] = kv.T_TYPE
             job_item[kv.Ith_PATTERN] = i_th_pattern
-            job_item[kv.TOPK_POS] = pos
-            job_item[kv.TOPK_VALUE] = value
+            job_item[kv.TOPK_POS] = topk["pos"]
+            job_item[kv.TOPK_VALUE] = topk["val"]
+            job_item[kv.START] = topk[kv.START]
+            job_item[kv.END] = topk[kv.END]
+
             self.receive_queue.put(job_item)
-        pass
     '''
     Master receives all data and put them into Queue
     If a package is a heartbeat from slaves, update slave_table
@@ -169,7 +173,7 @@ class Master(StrategyBase):
             for i in range(len(subvec)):
                 self.slaves_states[addr]['subvec'].insert(i_subv*self.msg_size + i, subvec[i])
             
-            self.update_topKs(new_topKs=topKs)
+            self.update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
             if done:
                 # whole subvec, i.e rightmost column of a chunck, has been received
@@ -191,7 +195,11 @@ class Master(StrategyBase):
 
         else:
             # traceback phase
-            # TODO
-            pass
-
+            alignment = data[kv.ALI]
+            i_th_pattern = data[kv.Ith_PATTERN]
+            topK_pos = data[kv.TOPK_POS]
+            topK_val = data[kv.TOPK_VALUE]
+            
+            files.save_output(i_th_pattern, alignment)
+            print(f"{i_th_pattern} pattern get one alignment of topk {topK_val} : {alignment}")
         pass
