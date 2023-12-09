@@ -215,14 +215,16 @@ class Slave(StrategyBase):
         if not self.job_queue.empty():
             task = self.job_queue.get()
             # test TODO
-            self.handle_fillmatrix(task)
-            print("Slave is handling fillmatrix task.")
+            # self.handle_fillmatrix(task)
+            # print("Slave is handling fillmatrix task.")
 
 
             # if self.stop_current_task:
             #     print("Slave is stopping current task.")
-            #     continue  # 跳过当前任务                  
+            #     continue  # 跳过当前任务    
+                          
             if task['type'] == 'fillmatrix':
+                print("job type is fillmatrix")
                 self.handle_fillmatrix(task)
             elif task['type'] == 'traceback':
                 self.handle_traceback(task)
@@ -267,7 +269,6 @@ class Slave(StrategyBase):
     def recv(self, addr, data):
         if data:
             data = pickle.loads(data)
-            print("receive: ", data)
             if data == 'Heartbeat':
                 # 处理心跳包
                 self.last_heartbeat_time = time.time()  # 更新最后一次心跳时间
