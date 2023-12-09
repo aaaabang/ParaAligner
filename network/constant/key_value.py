@@ -8,6 +8,13 @@ START = "start_ind"
 END = "end_ind"
 Done = "done"
 TOPKS = "topks"
+Ith_DATABASE = "i_th_database"
+Ith_PATTERN = "i_th_pattern"
+
 
 #traceback
 T_TYPE = "traceback"
+
+#config
+DATABASE = "database"
+PATTERN = "pattern"
