@@ -1,23 +1,45 @@
 import os.path
 import numpy as np
-
+import pickle
+#设置存储路径
 dir_block = "./"
 dir_topK = "./"
 
-def load_block(subvector, i, j):
-    filename = f"block_{i}_{j}.npy"
+def load_block(i_th_pattern, i, j):
+    filename = f"block_{i_th_pattern}.pkl"  
     filepath = os.path.join(dir_block, filename)
-    if not os.path.exists(filepath):
-        print(f"File {filepath} not found")
+    try:
+        with open(filename, 'rb') as file:
+            while 1:
+                try:
+                    data = pickle.load(file)
+                    if data['i'] == i and data['j'] == j:
+                        return data['subvector']
+                except EOFError:
+                    break
+    except IOError as e:
+        print("文件读取错误")
         return None
-    return np.load(filepath)
+    print("没有找到匹配的数据块")
+    return None
 
-def save_block(subvector,i_th_pattern, i, j):
+def save_block(subvector, i_th_pattern, i, j):
     if not os.path.exists(dir_block):
         os.makedirs(dir_block)
-    filename = f"block_{i}_{j}.npy" #用i、j标识; 也可以维护一个数据记录表
-    filepath = os.path.join(dir_block, filename)
-    np.save(filepath, subvector)
+    filename = f"block_{i_th_pattern}.pkl"
+    data = {
+        'subvector': subvector,
+        'i': i,
+        'j': j
+    }
+    filepath = os.path.join(dir_block,filename)
+    if os.path.exists(filepath):
+        mode = 'ab'
+    else:
+        mode = 'wb'
+    with open(filepath, mode) as file:
+        pickle.dump(data, file)
+        print("!")
     return None
 
 """
