@@ -55,7 +55,8 @@ class Master(StrategyBase):
                     kv.START: 0, 
                     kv.END: self.block_size, 
                     kv.I_SUBVEC: j, 
-                    kv.Ith_PATTERN: i
+                    kv.Ith_PATTERN: i,
+                    kv.TYPE: kv.T_TYPE
                 }
                 self.receive_queue.put(job_item)
                 # print("job_item", job_item)
@@ -91,7 +92,6 @@ class Master(StrategyBase):
             start_ind = job[kv.START]
             end_ind = job[kv.END]
             i_th_pattern = job[kv.Ith_PATTERN]
-            print(f"send_job {job}")
             if job[kv.I_SUBVEC] == 0:
                 # find a new slave for a new job
                 sent_flag = 0 # if find a idle slave, set 1 otherwise set 0
@@ -105,7 +105,9 @@ class Master(StrategyBase):
                         self.client.send(slave['addr'], data)
                         # see if job is sent successfully, if not, put it back into queue
                         sent_flag = 1
-                
+
+                        print(f"send new job {job} to Slave{slave['addr']}")
+
                 if sent_flag == 0:
                     # have not found a idle slave, put back job into queue
                     self.receive_queue.put(job)
