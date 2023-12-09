@@ -42,4 +42,4 @@ def read_fna(file_path, begin_ind, end_ind):
 
 def get_fna_length(file_path):
     #TODO
-    return 10
+    return 75

@@ -58,6 +58,7 @@ class Master(StrategyBase):
                     kv.Ith_PATTERN: i
                 }
                 self.receive_queue.put(job_item)
+                # print("job_item", job_item)
 
     
     def __send_heartbeat(self, interval=3):
@@ -69,7 +70,7 @@ class Master(StrategyBase):
             data = "Heartbeat"
             data = pickle.dumps(data)
             self.client.send(slave['addr'], data)
-            print(f"Matser Heartbeat sent to {slave['addr']}")
+            # print(f"Matser Heartbeat sent to {slave['addr']}")
 
         self.last_heartbeat = time.time()
 

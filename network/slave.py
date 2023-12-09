@@ -28,7 +28,9 @@ class Slave(StrategyBase):
 #already done
     def send_heartbeat_response(self):
         # response heartbeat
-        self.client.send(self.master_addr, b"Heartbeat Response")
+        data = "Heartbeat Response"
+        data = pickle.dumps(data)
+        self.client.send(self.master_addr, data)
         print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
         
 
