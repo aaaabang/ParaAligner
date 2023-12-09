@@ -22,7 +22,7 @@ class Slave(StrategyBase):
         master_addr = self.client.addr_list[0]
         with open('config.json', 'r') as f:
             self.configs = json.load(f)
-        print(f"configs: {self.configs} is initialized.")
+        # print(f"configs: {self.configs} is initialized.")
         # 停止任务的标志
         self.master_timed_out = False
         self.stop_current_task = False
@@ -42,6 +42,7 @@ class Slave(StrategyBase):
         if (current_time - self.last_heartbeat_time) > timeout and not self.master_timed_out:
             # if the master timeout
             print('Master is considered as timed out.')
+            time.sleep(5)
             # self.handle_master_timeout()
 
 
@@ -106,11 +107,13 @@ class Slave(StrategyBase):
             self.previous_bottom_vec = bottom_vec
 
             response_data = {
+                'type': 'fillmatrix',
+                'i_th_pattern': data['i_th_pattern'],
                 'start_ind': data['start_ind'],
                 'end_ind': data['end_ind'],
                 'i_subvec': data['i_subvec'],
                 'subvec': right_vec,
-                'topK': topK_dict,
+                'topks': topK_dict,
                 'done': False
             }
             self.send_fillmatirx(response_data)
@@ -122,11 +125,13 @@ class Slave(StrategyBase):
             pattern_subvec = pattern[data['i_subvec'] * subvec_length :]
             right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.configs['k'])
             response_data = {
+                'type': 'fillmatrix',
+                'i_th_pattern': data['i_th_pattern'],
                 'start_ind': data['start_ind'],
                 'end_ind': data['end_ind'],
                 'i_subvec': data['i_subvec'],
                 'subvec': right_vec,
-                'topK': topK_dict,
+                'topks': topK_dict,
                 'done': True
             }
             # self.send_fillmatirx(response_data)
@@ -205,15 +210,17 @@ class Slave(StrategyBase):
         #     time.sleep(5)
         if not self.job_queue.empty():
             task = self.job_queue.get()
+            # test TODO
             self.handle_fillmatrix(task)
             print("Slave is handling fillmatrix task.")
             # if self.stop_current_task:
             #     print("Slave is stopping current task.")
             #     continue  # 跳过当前任务                  
-            if task['type'] == 'fillmatrix':
-                self.handle_fillmatrix(task)
-            elif task['type'] == 'traceback':
-                self.handle_traceback(task)
+            # if task['type'] == 'fillmatrix':
+            #     self.handle_fillmatrix(task)
+            # elif task['type'] == 'traceback':
+            #     self.handle_traceback(task)
+
 
     # test
         # self.test_handle_fillmatrix()
