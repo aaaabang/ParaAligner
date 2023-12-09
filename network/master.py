@@ -30,10 +30,9 @@ class Master(StrategyBase):
         # the last time master sends heartbeat
         self.last_heartbeat = 0
 
-        self.init_jobs()
+        self.__init_jobs()
         
-    def init_jobs(self):   
-
+    def __init_jobs(self):   
         patterns = self.client.configs[kv.PATTERN]
         for i, pt in enumerate(patterns):
             self.patterns_sizes.append(get_fna_length(pt))
@@ -52,7 +51,7 @@ class Master(StrategyBase):
                 self.receive_queue.put(job_item)
 
     
-    def send_heartbeat(self, interval=3):
+    def __send_heartbeat(self, interval=3):
 
         while((time.time() - self.last_heartbeat) < interval):
             pass
@@ -63,7 +62,7 @@ class Master(StrategyBase):
 
         self.last_heartbeat = time.time()
 
-    def check_if_slave_alive(self, timeout=5):
+    def __check_if_slave_alive(self, timeout=5):
         current_time = time.time()
         for slave in self.slaves_states:
             # slave timeout
@@ -74,7 +73,7 @@ class Master(StrategyBase):
                 what to do if a slave time out
                 '''
 
-    def send_job_to_slave(self):
+    def __send_job_to_slave(self):
         while(not self.receive_queue.empty()):
             job = self.receive_queue.get()
             start_ind = job[kv.START]
@@ -109,13 +108,13 @@ class Master(StrategyBase):
     3. Send subvector of matrix to another slave
     '''
     def iter(self):
-        self.send_heartbeat(interval=3)
-        self.check_if_slave_alive(timeout=5)
-        self.send_job_to_slave()
+        self.__send_heartbeat(interval=3)
+        self.__check_if_slave_alive(timeout=5)
+        self.__send_job_to_slave()
         pass
 
 
-    def update_topKs(self, i_th_pattern, new_topKs, start_ind, end_ind):
+    def __update_topKs(self, i_th_pattern, new_topKs, start_ind, end_ind):
         i_topKs = self.topKs.setdefault(i_th_pattern, [])
         for new_topk in new_topKs:
             new_pos = new_topk[1]
@@ -131,13 +130,13 @@ class Master(StrategyBase):
             sorted_i_topKs = sorted(i_topKs, key=lambda x: x["val"])
             self.topKs[i_th_pattern] = sorted_i_topKs
 
-    def set_slave_idle(self, slave_addr):
+    def __set_slave_idle(self, slave_addr):
         for slave in self.slaves_states:
             if(slave["addr"] == slave_addr):
                 slave['idle'] = True
                 return
     
-    def init_traceback(self, i_th_pattern):
+    def __init_traceback(self, i_th_pattern):
         i_topKs = self.topKs[i_th_pattern] # this is a [{}]
         for topk in i_topKs:
             job_item = {}
@@ -174,19 +173,19 @@ class Master(StrategyBase):
             for i in range(len(subvec)):
                 self.slaves_states[addr]['subvec'].insert(i_subv*self.msg_size + i, subvec[i])
             
-            self.update_topKs(i_th_pattern, topKs, start_ind, end_ind)
+            self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
             if done:
                 # whole subvec, i.e rightmost column of a chunck, has been received
                 # ready to send to another slave for work
                 files.save_block(self.slaves_states[addr]['subvec'], i_th_pattern, start_ind, end_ind)
                 files.save_topK(self.topKs, i_th_pattern)
-                self.set_slave_idle(addr)
+                self.__set_slave_idle(addr)
                 del self.job_slave[(i_th_pattern, start_ind, end_ind)]
 
                 if end_ind >= self.database_size - 1:
                     # fill_matrix done!!!
-                    self.init_traceback(i_th_pattern)
+                    self.__init_traceback(i_th_pattern)
                     return
 
             data[kv.START] = end_ind + 1
