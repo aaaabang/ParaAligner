@@ -22,10 +22,11 @@ class Slave(StrategyBase):
         master_addr = self.client.addr_list[0]
         with open('config.json', 'r') as f:
             self.configs = json.load(f)
-        
+        print(f"configs: {self.configs} is initialized.")
         # 停止任务的标志
         self.master_timed_out = False
         self.stop_current_task = False
+        
 
 #already done
     def send_heartbeat_response(self):
@@ -33,7 +34,7 @@ class Slave(StrategyBase):
         data = "Heartbeat Response"
         data = pickle.dumps(data)
         self.client.send(self.master_addr, data)
-        print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
+        # print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
         
 
     def check_if_master_alive(self, timeout=5):
@@ -41,7 +42,7 @@ class Slave(StrategyBase):
         if (current_time - self.last_heartbeat_time) > timeout and not self.master_timed_out:
             # if the master timeout
             print('Master is considered as timed out.')
-            self.handle_master_timeout()
+            # self.handle_master_timeout()
 
 
 
@@ -62,13 +63,14 @@ class Slave(StrategyBase):
         #     content = f.read()
         # print(f"Content: {content}")
 
-
-        # 从文件系统读对应的sequence, pattern
+       
+            # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
-        sequence = read_fna(self.configs['database'], data['start_ind'], data['end_ind'])
+        # sequence = read_fna(self.configs['database'], data['start_ind'], data['end_ind'])
+        sequence = read_fna("data/databases/test.fna", data['start_ind'], data['end_ind'])
         print(f"sequence: {sequence}") # test
 
-        pattern = read_fna(self.configs['patterns'][i_th_pattern], 0, float('inf'))
+        pattern = read_fna(self.configs['patterns'][i_th_pattern], 0, 75)
         print(f"pattern: {pattern}") # test
 
         N = len(sequence)
@@ -87,8 +89,6 @@ class Slave(StrategyBase):
         # up_vec = [0,0]
         up_vec = [0 for _ in range(N)] if data['i_subvec'] == 0 else self.previous_bottom_vec
         # print(len(up_vec)) 
-        
-
         
 
         #for data['i_subvec'] in range(num_subvecs):
@@ -117,7 +117,6 @@ class Slave(StrategyBase):
             # test
 
             print("response:" , response_data)
-
 
         elif data['i_subvec'] == num_subvecs - 1:
             pattern_subvec = pattern[data['i_subvec'] * subvec_length :]
@@ -161,17 +160,6 @@ class Slave(StrategyBase):
 
         pattern_path = self.configs['patterns'][i_th_pattern]
         print(f"pattern: {pattern_path}") # test
-
-        # N = len(sequence)
-        # M = len(pattern)    
-        # print(N, M) # test
-
-
-        # T_TYPE = "traceback"
-        # TOPK_VALUE = "topk_value"
-        # TOPK_POS = "topk_pos"
-
-       
         
         # 执行 traceback 任务
         # trace_back(topK, start_s, end_s)
@@ -210,30 +198,26 @@ class Slave(StrategyBase):
 
 
     def iter(self):
-        # TODO
-        # 检查是否收到master的心跳包，如果超时，则处理master超时
-        # call alg to fill matrix, traceback
-        # send to M
-        # while True:
-        #     # 检查是否收到master的心跳包，如果超时，则处理master超时
-        #     self.check_if_master_alive(timeout=5)
-        #    # 处理任务队列中的任务
-        #     if not self.job_queue.empty():
-        #         task = self.job_queue.get()
+        self.check_if_master_alive(timeout=5)
+        # 处理任务队列中的任务
+        # if self.job_queue.empty():
+        #     print("Slave is waiting for data from Master.")
+        #     time.sleep(5)
+        if not self.job_queue.empty():
+            task = self.job_queue.get()
+            self.handle_fillmatrix(task)
+            print("Slave is handling fillmatrix task.")
+            # if self.stop_current_task:
+            #     print("Slave is stopping current task.")
+            #     continue  # 跳过当前任务                  
+            if task['type'] == 'fillmatrix':
+                self.handle_fillmatrix(task)
+            elif task['type'] == 'traceback':
+                self.handle_traceback(task)
 
-        #         if self.stop_current_task:
-        #             print("Slave is stopping current task.")
-        #             continue  # 跳过当前任务
-
-        #         if task['type'] == 'fillmatrix':
-        #             self.handle_fillmatrix(task)
-        #         elif task['type'] == 'traceback':
-        #             self.handle_traceback(task)
-
-
-        #     time.sleep(0.1)  # 休眠0.1秒，避免CPU占用过高
     # test
-        self.test_handle_fillmatrix()
+        # self.test_handle_fillmatrix()
+        # time.sleep(5)
         # self.test_handle_traceback()
         # pass
 
@@ -253,6 +237,7 @@ class Slave(StrategyBase):
         self.handle_fillmatrix(data)
 
     def test_handle_traceback(self):
+        
         # 创建一个 data 字典
         data = {
             'i_th_pattern' : 0,
@@ -273,12 +258,13 @@ class Slave(StrategyBase):
                 # 处理心跳包
                 self.last_heartbeat_time = time.time()  # 更新最后一次心跳时间
                 self.send_heartbeat_response()
-                print("Slave received heartbeat from Master")
+                # print("Slave received heartbeat from Master")
             # elif data == 'remake':
             #     self.handle_remake_command()
             else:
                 self.job_queue.put(data)
-
+                print("Slave received data from Master")
+                print("Current job_queue contents:", list(self.job_queue.queue))
 
 
 

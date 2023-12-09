@@ -1,6 +1,7 @@
 {
   "database": "data/databases/covid1.fna",
   "patterns": [
+    "data/patterns/test_fna",
     "data/patterns/small.fna",
     "data/patterns/medium.fna"
   ],
