@@ -8,7 +8,7 @@ from .base import StrategyBase
 from alg import files
 from .constant import key_value as kv
 import numpy as np
-from alg.seq import get_fna_length
+from alg.seq import get_str_length
 class Master(StrategyBase):
 
     def __init__(self, client):
@@ -25,7 +25,7 @@ class Master(StrategyBase):
         # send and receive a msg of 50 grids at a time within a subvector
         self.msg_size = 50
         # divide database into blocks
-        self.database_size = get_fna_length(self.client.configs[kv.DATABASE])
+        self.database_size = get_str_length(self.client.configs[kv.DATABASE])
         self.block_size = int(math.sqrt(self.database_size))
         #support multiple patterns
         self.patterns_sizes = []
@@ -37,7 +37,7 @@ class Master(StrategyBase):
     def __init_jobs(self):   
         patterns = self.client.configs[kv.PATTERN]
         for i, pt in enumerate(patterns):
-            self.patterns_sizes.append(get_fna_length(pt))
+            self.patterns_sizes.append(get_str_length(pt))
             print(f"{i} th pattern's size is {self.patterns_sizes[i]}")
             j = -1 # i_subvec
             while True:
