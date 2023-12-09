@@ -163,10 +163,9 @@ class Slave(StrategyBase):
         # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
         sequence_path = self.client.configs['database']
-        print(f"sequence: {sequence_path}") # test
-
+        # print(f"sequence: {sequence_path}") # test
         pattern_path = self.client.configs['patterns'][i_th_pattern]
-        print(f"pattern: {pattern_path}") # test
+        # print(f"pattern: {pattern_path}") # test
         
         # 执行 traceback 任务
         # trace_back(topK, start_s, end_s)
@@ -184,7 +183,7 @@ class Slave(StrategyBase):
             "xy": data['topk_pos']
         }
 
-        aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'])
+        aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'], sequence_path, pattern_path)
 
         # 将结果发送回 Master
         response_data = {
@@ -213,26 +212,26 @@ class Slave(StrategyBase):
         #     time.sleep(5)
 
 
-        # if not self.job_queue.empty():
-        #     task = self.job_queue.get()
-        #     # test TODO
-        #     self.handle_fillmatrix(task)
-        #     print("Slave is handling fillmatrix task.")
+        if not self.job_queue.empty():
+            task = self.job_queue.get()
+            # test TODO
+            self.handle_fillmatrix(task)
+            print("Slave is handling fillmatrix task.")
 
 
             # if self.stop_current_task:
             #     print("Slave is stopping current task.")
             #     continue  # 跳过当前任务                  
-            # if task['type'] == 'fillmatrix':
-            #     self.handle_fillmatrix(task)
-            # elif task['type'] == 'traceback':
-            #     self.handle_traceback(task)
+            if task['type'] == 'fillmatrix':
+                self.handle_fillmatrix(task)
+            elif task['type'] == 'traceback':
+                self.handle_traceback(task)
 
 
     # test
-        self.test_handle_fillmatrix()
-        self.test_handle_traceback()
-        time.sleep(5)
+        # self.test_handle_fillmatrix()
+        # self.test_handle_traceback()
+        # time.sleep(5)
        
         # pass
 

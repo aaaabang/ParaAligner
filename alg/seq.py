@@ -15,4 +15,3 @@ def read_str(file_path, begin_ind, end_ind):
 def get_str_length(file_path):
     return os.stat(file_path).st_size
 
-print(read_str("data/patterns/test_fna", 0, 10))
