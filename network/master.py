@@ -124,7 +124,7 @@ class Master(StrategyBase):
                 i_topKs.append({"pos": new_pos, "val": new_val, kv.START: start_ind, kv.END: end_ind})
                 continue
 
-            if new_val > min_value:
+            if new_val > i_topKs[0]['val']:
                 i_topKs[0] = {"pos": new_pos, "val": new_val, kv.START: start_ind, kv.END: end_ind}
             
             # 按照 "val" 键进行排序
@@ -149,6 +149,7 @@ class Master(StrategyBase):
             job_item[kv.END] = topk[kv.END]
 
             self.receive_queue.put(job_item)
+    
     '''
     Master receives all data and put them into Queue
     If a package is a heartbeat from slaves, update slave_table
