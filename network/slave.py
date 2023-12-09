@@ -5,8 +5,8 @@ import json
 import pickle
 
 from .base import StrategyBase
-# from alg.alg import fill_matrix, trace_back
-from alg.test_alg import fill_matrix, trace_back
+from alg.alg import fill_matrix, trace_back
+# from alg.test_alg import fill_matrix, trace_back
 from alg.seq import read_str, get_str_length
 from .constant import key_value as kv
 # from .master import Master
@@ -192,7 +192,7 @@ class Slave(StrategyBase):
             'i_th_pattern': i_th_pattern,
             'topk_pos': data['topk_pos'],
             'topk_value': data['topk_value'],
-            'type': 'traceback'
+            'type': kv.T_TYPE
         }
         print("tb_response_data:" , response_data)
         self.send_traceback(response_data)
