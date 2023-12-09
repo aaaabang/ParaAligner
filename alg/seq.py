@@ -17,8 +17,10 @@ def read_fna(file_path, begin_ind, end_ind):
     with open(file_path, 'rb') as file:
         # Skip the header line that starts with '>'
         line = file.readline()
-        while line.startswith(b'>'):
-            line = file.readline()
+        
+        # DEBUG: the file pointer moves to the next line, i.e starting from the 2nd line
+        # while line.startswith(b'>'):
+        #     line = file.readline()
 
         # Move to the start index position
         file.seek(begin_ind, 1)  # Move from the current position
@@ -33,3 +35,11 @@ def read_fna(file_path, begin_ind, end_ind):
             chars_read += 1
 
     return sequence
+
+
+print("p:",read_fna("data/patterns/small.fna", 0, 5))
+print("da", read_fna("data/databases/covid1.fna", 0, 5))
+
+def get_fna_length(file_path):
+    #TODO
+    pass
