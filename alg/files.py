@@ -12,7 +12,7 @@ def load_block(subvector, i, j):
         return None
     return np.load(filepath)
 
-def save_block(subvector, i, j):
+def save_block(subvector,i_th_pattern, i, j):
     if not os.path.exists(dir_block):
         os.makedirs(dir_block)
     filename = f"block_{i}_{j}.npy" #用i、j标识; 也可以维护一个数据记录表
