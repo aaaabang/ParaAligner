@@ -23,7 +23,7 @@ def save_block(subvector, i, j):
 """
 topKs: 列表，其中每个元素是一个字典?
 """
-def save_topK(topKs):
+def save_topK(topKs, i_th_pattern):
     if not os.path.exists(dir_topK):
         os.makedirs(dir_topK)
     x,y = topKs[0]["xy"] 
@@ -31,3 +31,11 @@ def save_topK(topKs):
     filepath = os.path.join(dir_topK, filename)
     np.save(filepath, topKs)
     return None
+
+def save_output(i_th_pattern, align, topK_val):
+    #TODO
+    with open(f"data/output/{i_th_pattern}", 'a') as file:
+        # 追加内容到文件
+        file.write(f"topK_val: {topK_val} \n")
+        file.write(f"alignment: {align} \n")
+        file.write("\n")

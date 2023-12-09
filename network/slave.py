@@ -1,3 +1,4 @@
+import pickle
 import queue
 from .base import StrategyBase
 from alg.alg import fill_matrix, trace_back
@@ -91,6 +92,7 @@ class Slave(StrategyBase):
         #for data['i_subvec'] in range(num_subvecs):
         if data['i_subvec'] < num_subvecs - 1:
             pattern_subvec = pattern[data['i_subvec'] * subvec_length : (data['i_subvec'] + 1) * (subvec_length-1)]
+
             # print(f"pattern_subvec: {pattern_subvec}")
             # print(f"sequence: {sequence}")
             # print(f"up_vec: {up_vec}")
@@ -111,7 +113,9 @@ class Slave(StrategyBase):
             }
             self.send_fillmatirx(response_data)
             # test
+
             print("response:" , response_data)
+
 
         elif data['i_subvec'] == num_subvecs - 1:
             pattern_subvec = pattern[data['i_subvec'] * subvec_length :]
@@ -133,6 +137,7 @@ class Slave(StrategyBase):
         # 将结果发送回 Master
         data = pickle.dumps(data)
         self.client.send(self.master_addr,data)
+
         print(f"Slave {self.rank} sends fillmatrix result to {self.master_addr}")
         
 
@@ -181,7 +186,9 @@ class Slave(StrategyBase):
             "i_subvec": 0, # TODO
             "xy": data['topk_pos']
         }
+
         aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'], sequence_path, pattern_path)
+
         # 将结果发送回 Master
         response_data = {
             'alignment': aligned_s_s,
@@ -196,6 +203,7 @@ class Slave(StrategyBase):
         # 将结果发送回 Master
         data = pickle.dumps(data)
         self.client.send(self.master_addr,data)
+
         print(f"Slave {self.rank} sends traceback result to {self.master_addr}")
 
 
@@ -219,6 +227,7 @@ class Slave(StrategyBase):
         #             self.handle_fillmatrix(task)
         #         elif task['type'] == 'traceback':
         #             self.handle_traceback(task)
+
 
         #     time.sleep(0.1)  # 休眠0.1秒，避免CPU占用过高
     # test
