@@ -8,6 +8,8 @@ from alg import files
 from alg.seq import read_fna
 # from .master import Master
 import json
+import numpy as np
+import pickle
 
 class Slave(StrategyBase):
     def __init__(self, client):
@@ -90,16 +92,17 @@ class Slave(StrategyBase):
         #for data['i_subvec'] in range(num_subvecs):
         if data['i_subvec'] < num_subvecs - 1:
             pattern_subvec = pattern[data['i_subvec'] * subvec_length : (data['i_subvec'] + 1) * (subvec_length-1)]
-            print(f"pattern_subvec: {pattern_subvec}")
-            print(f"sequence: {sequence}")
+
+            # print(f"pattern_subvec: {pattern_subvec}")
+            # print(f"sequence: {sequence}")
             # print(f"up_vec: {up_vec}")
-            print(f"data['i_subvec']: {data['i_subvec']}")
-            print(f"data['start_ind']: {data['start_ind']}")
-            print(f"data['end_ind']: {data['end_ind']}")
-            print(f"self.client.K: {self.configs['k']}")
+            # print(f"data['i_subvec']: {data['i_subvec']}")
+            # print(f"data['start_ind']: {data['start_ind']}")
+            # print(f"data['end_ind']: {data['end_ind']}")
+            # print(f"self.client.K: {self.configs['k']}")
             right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.configs['k'])
-            print("bottom_vec: ", bottom_vec)
             self.previous_bottom_vec = bottom_vec
+
             response_data = {
                 'start_ind': data['start_ind'],
                 'end_ind': data['end_ind'],
@@ -110,7 +113,9 @@ class Slave(StrategyBase):
             }
             self.send_fillmatirx(response_data)
             # test
-            print(response_data)
+
+            print("response:" , response_data)
+
 
         elif data['i_subvec'] == num_subvecs - 1:
             pattern_subvec = pattern[data['i_subvec'] * subvec_length :]
@@ -130,9 +135,9 @@ class Slave(StrategyBase):
 
     def send_fillmatirx(self, data):
         # 将结果发送回 Master
-        data_str = json.dumps(data)
-        data_bytes = data_str.encode('utf-8')
-        self.client.send(self.master_addr,data_bytes)
+        data = pickle.dumps(data)
+        self.client.send(self.master_addr,data)
+
         print(f"Slave {self.rank} sends fillmatrix result to {self.master_addr}")
         
 
@@ -149,11 +154,11 @@ class Slave(StrategyBase):
         '''
         # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
-        sequence = read_fna(self.configs['database'], data['start_ind'], data['end_ind'])
-        # print(f"sequence: {sequence}") # test
+        sequence_path = self.configs['database']
+        print(f"sequence: {sequence_path}") # test
 
-        pattern = read_fna(self.configs['patterns'][i_th_pattern], 0, float('inf'))
-        # print(f"pattern: {pattern}") # test
+        pattern_path = self.configs['patterns'][i_th_pattern]
+        print(f"pattern: {pattern_path}") # test
 
         # N = len(sequence)
         # M = len(pattern)    
@@ -181,7 +186,9 @@ class Slave(StrategyBase):
             "i_subvec": 0, # TODO
             "xy": data['topk_pos']
         }
-        aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'])
+
+        aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'], sequence_path, pattern_path)
+
         # 将结果发送回 Master
         response_data = {
             'alignment': aligned_s_s,
@@ -194,9 +201,9 @@ class Slave(StrategyBase):
 
     def send_traceback(self, data):
         # 将结果发送回 Master
-        data_str = json.dumps(data)
-        data_bytes = data_str.encode('utf-8')
-        self.client.send(self.master_addr,data_bytes)
+        data = pickle.dumps(data)
+        self.client.send(self.master_addr,data)
+
         print(f"Slave {self.rank} sends traceback result to {self.master_addr}")
 
 
@@ -221,10 +228,11 @@ class Slave(StrategyBase):
         #         elif task['type'] == 'traceback':
         #             self.handle_traceback(task)
 
+
         #     time.sleep(0.1)  # 休眠0.1秒，避免CPU占用过高
     # test
-        # self.test_handle_fillmatrix()
-        self.test_handle_traceback()
+        self.test_handle_fillmatrix()
+        # self.test_handle_traceback()
         # pass
 
     # test
