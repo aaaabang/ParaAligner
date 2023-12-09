@@ -21,12 +21,13 @@ def save_block(subvector, i, j):
     return None
 
 """
-topKs: 列表，其中每个元素是一个字典？？？
+topKs: 列表，其中每个元素是一个字典?
 """
 def save_topK(topKs):
     if not os.path.exists(dir_topK):
         os.makedirs(dir_topK)
-    filename = f"      .npy"  # 该用什么作标识？
+    x,y = topKs[0]["xy"] 
+    filename = f"topks_{x}_{y}.npy" #暂时用列表第一个元素的坐标作为标识
     filepath = os.path.join(dir_topK, filename)
     np.save(filepath, topKs)
     return None
