@@ -31,3 +31,7 @@ def save_topK(topKs, i_th_pattern):
     filepath = os.path.join(dir_topK, filename)
     np.save(filepath, topKs)
     return None
+
+def save_output(i_th_pattern, result):
+    #TODO
+    pass
