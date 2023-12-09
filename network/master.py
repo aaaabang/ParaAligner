@@ -100,7 +100,6 @@ class Master(StrategyBase):
                         self.job_slave[(i_th_pattern, start_ind, end_ind)] = slave['addr']
                         slave['idle'] = False
                         # send to slave
-                        # data = job.encode()
                         data = pickle.dumps(job)
                         self.client.send(slave['addr'], data)
                         # see if job is sent successfully, if not, put it back into queue
@@ -113,7 +112,7 @@ class Master(StrategyBase):
 
             else:
                 slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
-                data = job.encode()
+                data = pickle.dumps(job)
                 self.client.send(slave, data)
               
     '''
@@ -168,7 +167,7 @@ class Master(StrategyBase):
     If a package is a heartbeat from slaves, update slave_table
     '''
     def recv(self, addr, data):
-        data = data.decode()
+        data = pickle.loads(data)
         print(f"receive: {data} from {addr}")
         if data == "Heartbeat Response":
             # update slave's state
