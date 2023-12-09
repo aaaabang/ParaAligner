@@ -105,7 +105,7 @@ class Slave(StrategyBase):
             # print(f"data['start_ind']: {data['start_ind']}")
             # print(f"data['end_ind']: {data['end_ind']}")
             # print(f"self.client.K: {self.configs['k']}")
-            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.configs['k'])
+            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'])
             self.previous_bottom_vec = bottom_vec
 
             response_data = {
@@ -162,10 +162,10 @@ class Slave(StrategyBase):
         '''
         # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
-        sequence_path = self.configs['database']
+        sequence_path = self.client.configs['database']
         print(f"sequence: {sequence_path}") # test
 
-        pattern_path = self.configs['patterns'][i_th_pattern]
+        pattern_path = self.client.configs['patterns'][i_th_pattern]
         print(f"pattern: {pattern_path}") # test
         
         # 执行 traceback 任务
