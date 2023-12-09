@@ -1,7 +1,7 @@
 import os.path
 
 import numpy as np
-from alg.seq import read_fna
+from alg.seq import read_str
 
 #设置空位罚分和置换矩阵
 gap_penalty = -2
