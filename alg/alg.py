@@ -1,7 +1,7 @@
 import os.path
 
 import numpy as np
-from alg.seq import read_fna
+from alg.seq import read_str
 
 #设置空位罚分和置换矩阵
 gap_penalty = -2
@@ -37,13 +37,13 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K):
     len_p = len(left_vec) - 1 
     # start_p = i_vec * len_p
     # end_p = start_p + len_p - 1
-    # pattern_vec = read_fna(path_p, start_p, end_p)
+    # pattern_vec = read_str(path_p, start_p, end_p)
     # pattern_vec = "GGTTGACTA" #测试用
     # pattern_vec = "GACT"
     # pattern_vec = "G"
 
     # 从文件系统读对应的sequence
-    # seq_vec = read_fna(path_s, start_s, end_s)
+    # seq_vec = read_str(path_s, start_s, end_s)
     # seq_vec = "TGTTACGG" #测试用
     # seq_vec = "TTA"
 
@@ -117,7 +117,7 @@ def trace_back(topK, start_s, end_s):
     while continued:
 
         #读取相应子sequece、左边界值、pattern
-        seq_vec = read_fna(path_s, start_s, end_s)
+        seq_vec = read_str(path_s, start_s, end_s)
         # seq_vec = "TGTTACGG" #测试用
         # if n==1:seq_vec = "ACGG"
         # if n==2:seq_vec = "TGTT"
@@ -128,7 +128,7 @@ def trace_back(topK, start_s, end_s):
         # if n==1:left_vec = [0,0,4,9,7,5,3,4,2]
         # if n==2:left_vec = np.zeros((9,), dtype=int)
 
-        pattern_vec = read_fna(path_p, 0, len(left_vec) - 1)
+        pattern_vec = read_str(path_p, 0, len(left_vec) - 1)
         # pattern_vec = "GGTTGACTA" #测试用
 
         #初始化得分矩阵
