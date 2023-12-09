@@ -172,9 +172,9 @@ class Master(StrategyBase):
     def recv(self, addr, data):
         data = pickle.loads(data)
         print(f"receive: {data} from {addr}")
+        rank = self.client.addr_list.index(addr)
         if data == "Heartbeat Response":
             # update slave's state
-            rank = self.client.addr_list.index(addr)
             self.slaves_states[rank-1]['update_time'] = time.time()
         elif data[kv.TYPE] == kv.F_TYPE:
             # fillmatrix phase
@@ -187,7 +187,7 @@ class Master(StrategyBase):
             keys = [kv.Ith_PATTERN, kv.I_SUBVEC, kv.SUBVEC, kv.START, kv.END, kv.Done, kv.TOPKS]
             i_th_pattern, i_subv, subvec, start_ind, end_ind, done, topKs = map(itemgetter(*keys), [data] * len(keys))
             for i in range(len(subvec)):
-                self.slaves_states[addr]['subvec'].insert(i_subv*self.msg_size + i, subvec[i])
+                self.slaves_states[rank-1]['subvec'].insert(i_subv*self.msg_size + i, subvec[i])
             
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
