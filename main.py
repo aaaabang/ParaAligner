@@ -8,4 +8,5 @@ def main(addr_list, addr, configs):
 
 if __name__ == '__main__':
     # TODO
+    #addr_list [(ip, port)]
     pass
