@@ -47,7 +47,14 @@ class Master(StrategyBase):
                     size = min(remain_subvec_size, self.msg_size)
                     subvec = np.zeros(size)
                     j += 1
-                job_item = {kv.SUBVEC: subvec, kv.START: 0, kv.END: self.block_size, kv.I_SUBVEC: j, kv.Ith_PATTERN: i}
+                    
+                job_item = {
+                    kv.SUBVEC: subvec, 
+                    kv.START: 0, 
+                    kv.END: self.block_size, 
+                    kv.I_SUBVEC: j, 
+                    kv.Ith_PATTERN: i
+                }
                 self.receive_queue.put(job_item)
 
     
@@ -96,6 +103,7 @@ class Master(StrategyBase):
                 if sent_flag == 0:
                     # have not found a idle slave, put back job into queue
                     self.receive_queue.put(job)
+                    return
 
             else:
                 slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
@@ -139,14 +147,14 @@ class Master(StrategyBase):
     def __init_traceback(self, i_th_pattern):
         i_topKs = self.topKs[i_th_pattern] # this is a [{}]
         for topk in i_topKs:
-            job_item = {}
-            job_item[kv.TYPE] = kv.T_TYPE
-            job_item[kv.Ith_PATTERN] = i_th_pattern
-            job_item[kv.TOPK_POS] = topk["pos"]
-            job_item[kv.TOPK_VALUE] = topk["val"]
-            job_item[kv.START] = topk[kv.START]
-            job_item[kv.END] = topk[kv.END]
-
+            job_item = {
+                kv.TYPE: kv.T_TYPE,
+                kv.Ith_PATTERN: i_th_pattern,
+                kv.TOPK_POS: topk["pos"],
+                kv.TOPK_VALUE: topk["val"],
+                kv.START: topk[kv.START],
+                kv.END: topk[kv.END]
+            }
             self.receive_queue.put(job_item)
     
     '''
@@ -200,6 +208,6 @@ class Master(StrategyBase):
             topK_pos = data[kv.TOPK_POS]
             topK_val = data[kv.TOPK_VALUE]
             
-            files.save_output(i_th_pattern, alignment)
+            files.save_output(i_th_pattern, alignment, topK_val)
             print(f"{i_th_pattern} pattern get one alignment of topk {topK_val} : {alignment}")
         pass
