@@ -14,6 +14,8 @@ Ith_PATTERN = "i_th_pattern"
 
 #traceback
 T_TYPE = "traceback"
+TOPK_VALUE = "topk_value"
+TOPK_POS = "topk_pos"
 
 #config
 DATABASE = "database"

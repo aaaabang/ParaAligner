@@ -17,7 +17,7 @@ class Master(StrategyBase):
         self.job_slave = {}
         # save jobs for slaves
         self.receive_queue = queue.Queue()
-        # top-k value and theri pos
+        # top-k value and theri pos {i_th_pattern: {pos: val} }
         self.topKs = {}
         
         # send and receive a msg of 50 grids at a time within a subvector
@@ -136,6 +136,14 @@ class Master(StrategyBase):
                 return
     
     def init_traceback(self, i_th_pattern):
+        i_topKs = self.topKs[i_th_pattern]
+        for pos, value in i_topKs.items():
+            job_item = {}
+            job_item[kv.TYPE] = kv.T_TYPE
+            job_item[kv.Ith_PATTERN] = i_th_pattern
+            job_item[kv.TOPK_POS] = pos
+            job_item[kv.TOPK_VALUE] = value
+            self.receive_queue.put(job_item)
         pass
     '''
     Master receives all data and put them into Queue
