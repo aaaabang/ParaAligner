@@ -1,15 +1,16 @@
 import pickle
 import queue
+import time
+import json
+import pickle
+
 from .base import StrategyBase
 from alg.alg import fill_matrix, trace_back
-import time
+from alg.test_alg import fill_matrix, trace_back
+from alg.seq import read_str, get_str_length
 from .constant import key_value as kv
-from alg import files
-from alg.seq import read_fna
 # from .master import Master
-import json
-import numpy as np
-import pickle
+
 
 class Slave(StrategyBase):
     def __init__(self, client):
@@ -28,7 +29,6 @@ class Slave(StrategyBase):
         self.stop_current_task = False
         
 
-#already done
     def send_heartbeat_response(self):
         # response heartbeat
         data = "Heartbeat Response"
@@ -44,7 +44,6 @@ class Slave(StrategyBase):
             print('Master is considered as timed out.')
             time.sleep(5)
             # self.handle_master_timeout()
-
 
 
 #computing functions
@@ -68,10 +67,12 @@ class Slave(StrategyBase):
             # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
         # sequence = read_fna(self.configs['database'], data['start_ind'], data['end_ind'])
-        sequence = read_fna("data/databases/test.fna", data['start_ind'], data['end_ind'])
+        sequence = read_str("data/databases/test.txt", data['start_ind'], data['end_ind'])
         print(f"sequence: {sequence}") # test
 
-        pattern = read_fna(self.configs['patterns'][i_th_pattern], 0, 75)
+        # pattern = read_str(self.configs['patterns'][i_th_pattern], 0, 75)
+        pat_len = get_str_length("data/patterns/medium.txt")
+        pattern = read_str("data/patterns/medium.txt", 0, pat_len)
         print(f"pattern: {pattern}") # test
 
         N = len(sequence)
@@ -182,7 +183,7 @@ class Slave(StrategyBase):
             "xy": data['topk_pos']
         }
 
-        aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'], sequence_path, pattern_path)
+        aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'])
 
         # 将结果发送回 Master
         response_data = {
@@ -208,11 +209,15 @@ class Slave(StrategyBase):
         # if self.job_queue.empty():
         #     print("Slave is waiting for data from Master.")
         #     time.sleep(5)
-        if not self.job_queue.empty():
-            task = self.job_queue.get()
-            # test TODO
-            self.handle_fillmatrix(task)
-            print("Slave is handling fillmatrix task.")
+
+
+        # if not self.job_queue.empty():
+        #     task = self.job_queue.get()
+        #     # test TODO
+        #     self.handle_fillmatrix(task)
+        #     print("Slave is handling fillmatrix task.")
+
+
             # if self.stop_current_task:
             #     print("Slave is stopping current task.")
             #     continue  # 跳过当前任务                  
@@ -223,9 +228,10 @@ class Slave(StrategyBase):
 
 
     # test
-        # self.test_handle_fillmatrix()
-        # time.sleep(5)
-        # self.test_handle_traceback()
+        self.test_handle_fillmatrix()
+        self.test_handle_traceback()
+        time.sleep(5)
+       
         # pass
 
     # test
