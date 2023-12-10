@@ -266,7 +266,9 @@ class Master(StrategyBase):
             topK_val = data[kv.TOPK_VALUE]
         
             self.__set_slave_idle(addr)
-            del self.job_slave[(i_th_pattern, start_ind, end_ind)]
+
+            # del self.job_slave[(i_th_pattern, start_ind, end_ind)]
+            self.job_slave = dict(filter(lambda item: item[1] != addr, self.job_slave.items()))
             files.save_output(i_th_pattern, alignment, topK_val)
             print(f"{i_th_pattern} pattern get one alignment of topk {topK_val} : {alignment}")
         pass

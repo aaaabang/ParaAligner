@@ -10,7 +10,6 @@ output_dir = './output'
 
 
 def fs_init():
-    print('??')
     if os.path.exists(backup_dir):
         shutil.rmtree(backup_dir)
     if os.path.exists(output_dir):

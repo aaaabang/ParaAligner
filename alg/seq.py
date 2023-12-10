@@ -8,7 +8,7 @@ def write_str(seq, file_path):
 def read_str(file_path, begin_ind, end_ind):
     with open(file_path, 'rb') as file:
         file.seek(begin_ind)
-        data = file.read(end_ind - begin_ind)
+        data = file.read(end_ind - begin_ind + 1)
         return data.decode('utf-8')
 
 
