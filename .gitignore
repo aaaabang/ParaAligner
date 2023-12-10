@@ -4,3 +4,5 @@ playground*
 .idea/
 .vscode/
 __pycache__/
+backup/
+output/
