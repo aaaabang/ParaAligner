@@ -111,7 +111,7 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         # if n==2:seq_vec = "TGTT"
 
         
-        left_vec = load_block(i_th_pattern, start_s, end_s)
+        left_vec = load_block(i_th_pattern, start_s - 1)
         # left_vec = np.zeros((9,), dtype=int)  # 测试用
         # if n==1:left_vec = [0,0,4,9,7,5,3,4,2]
         # if n==2:left_vec = np.zeros((9,), dtype=int)
