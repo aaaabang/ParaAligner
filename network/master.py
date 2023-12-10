@@ -1,3 +1,4 @@
+import copy
 import json
 import math
 from operator import itemgetter
@@ -41,7 +42,7 @@ class Master(StrategyBase):
         patterns = self.client.configs[kv.PATTERN]
         for i, pt in enumerate(patterns):
             self.patterns_sizes.append(get_str_length(pt))
-            print(f"{i} th pattern's size is {self.patterns_sizes[i]}")
+            # print(f"{i} th pattern's size is {self.patterns_sizes[i]}")
             j = -1 # i_subvec
             while True:
                 current_subvec_size = (j+1)* self.msg_size
@@ -96,14 +97,32 @@ class Master(StrategyBase):
             start_ind = job[kv.START]
             end_ind = job[kv.END]
             i_th_pattern = job[kv.Ith_PATTERN]
+
+            if job[kv.TYPE] == kv.T_TYPE:
+                sent_flag = 0 # if find a idle slave, set 1 otherwise set 0
+                for slave in self.slaves_states:
+                    if slave['idle'] == True and slave['alive'] == True:
+                        slave['idle'] = False
+                        data = pickle.dumps(job)
+                        self.client.send(slave['addr'], data)
+                        # see if job is sent successfully, if not, put it back into queue
+                        sent_flag = 1
+                        break
+                if sent_flag == 0:
+                    # have not found a idle slave, put back job into queue
+                    self.receive_queue.put(job)
+
+                return
+            
+            # Fillmatrix job
             if job[kv.I_SUBVEC] == 0:
                 # find a new slave for a new job
                 sent_flag = 0 # if find a idle slave, set 1 otherwise set 0
                 for slave in self.slaves_states:
                     if slave['idle'] == True and slave['alive'] == True:
+                        slave['idle'] = False
                         # update job_slave and slaves_states
                         self.job_slave[(i_th_pattern, start_ind, end_ind)] = slave['addr']
-                        slave['idle'] = False
                         slave[kv.SUBVEC] = numpy.zeros(self.patterns_sizes[i_th_pattern])
                         # send to slave
                         data = pickle.dumps(job)
@@ -179,12 +198,13 @@ class Master(StrategyBase):
     '''
     def recv(self, addr, data):
         data = pickle.loads(data)
-        print(f"receive: {data} from {addr}")
         rank = self.client.addr_list.index(addr)
         if data == "Heartbeat Response":
             # update slave's state
             self.slaves_states[rank-1]['update_time'] = time.time()
         elif data[kv.TYPE] == kv.F_TYPE:
+            print(f"receive: {data} from {addr}")
+
             # fillmatrix phase
             # i_subv = data['i_subvec'] # index of the received parts of rightmost column
             # subvec = data['subvec']
@@ -208,20 +228,24 @@ class Master(StrategyBase):
                 subvec_list[i_subv * self.msg_size] = subvec[i]
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
+
             if done:
                 # whole subvec, i.e rightmost column of a chunck, has been received
                 # ready to send to another slave for work
                 # print("self.slaves_states:", self.slaves_states)
-                files.save_block(self.slaves_states[addr]['subvec'], i_th_pattern, start_ind, end_ind)
-                files.save_topK(self.topKs, i_th_pattern)
+                files.save_block(self.slaves_states[rank-1]['subvec'], i_th_pattern, start_ind, end_ind)
+                # files.save_topK(self.topKs, i_th_pattern)
                 self.__set_slave_idle(addr)
                 del self.job_slave[(i_th_pattern, start_ind, end_ind)]
-
                 if end_ind >= self.database_size - 1:
                     # fill_matrix done!!!
                     self.__init_traceback(i_th_pattern)
                     return
 
+            if end_ind >= self.database_size - 1:
+                # fill_matrix最右一个矩阵块
+                return
+            
             data[kv.START] = end_ind + 1
             data[kv.END] = min(end_ind + self.block_size, self.database_size - 1)
             # job_item = {kv.Ith_PATTERN: i_th_pattern, kv.SUBVEC: subvec, 'start_ind': end_ind + 1, "end_ind": end_ind + self.block_size, 'i_subv': i_subv}
@@ -229,17 +253,20 @@ class Master(StrategyBase):
             print("size queue", self.receive_queue.qsize())
             queue_copy = self.receive_queue.queue.copy()
 
-            # 访问队列副本但不处理
-            while queue_copy:
-                item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
-                print("item", item)
+            # # 访问队列副本但不处理
+            # while queue_copy:
+            #     item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
+            #     print("item", item)
         else:
+            print(f"receive: {data} from {addr}")
             # traceback phase
             alignment = data[kv.ALI]
             i_th_pattern = data[kv.Ith_PATTERN]
             topK_pos = data[kv.TOPK_POS]
             topK_val = data[kv.TOPK_VALUE]
-            
+        
+            self.__set_slave_idle(addr)
+            del self.job_slave[(i_th_pattern, start_ind, end_ind)]
             files.save_output(i_th_pattern, alignment, topK_val)
             print(f"{i_th_pattern} pattern get one alignment of topk {topK_val} : {alignment}")
         pass

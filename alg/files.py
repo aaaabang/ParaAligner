@@ -59,5 +59,5 @@ def save_output(i_th_pattern, align, topK_val):
     with open(f"data/output/{i_th_pattern}", 'a') as file:
         # 追加内容到文件
         file.write(f"topK_val: {topK_val} \n")
-        file.write(f"alignment: {align} \n")
+        file.write(f"alignments: {align} \n")
         file.write("\n")

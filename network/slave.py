@@ -127,9 +127,6 @@ class Slave(StrategyBase):
             # TEST
             print("result test:" , response_data)
             self.send_fillmatirx(response_data)
-            # test
-
-            print("response:" , response_data)
 
         elif data['i_subvec'] == self.num_subvecs - 1:
             print(f"data 1:{data['i_subvec']}")
