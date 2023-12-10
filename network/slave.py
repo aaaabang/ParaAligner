@@ -194,10 +194,12 @@ class Slave(StrategyBase):
 
         # 将结果发送回 Master
         response_data = {
-            'alignment': aligned_s_s,
+            'alignment':  (aligned_p_s,aligned_s_s),
             'i_th_pattern': i_th_pattern,
             'topk_pos': data['topk_pos'],
             'topk_value': data['topk_value'],
+            # 'start_ind': data['start_ind'],
+            # 'end_ind': data['end_ind'],
             'type': kv.T_TYPE
         }
         print("tb_response_data:" , response_data)
