@@ -107,7 +107,10 @@ class Slave(StrategyBase):
             # print(f"self.client.K: {self.configs['k']}")
             right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'])
             self.previous_bottom_vec = bottom_vec
-
+            
+            # test
+            right_vec = right_vec.tolist()
+            
             response_data = {
                 'type': 'fillmatrix',
                 'i_th_pattern': data['i_th_pattern'],
@@ -118,6 +121,9 @@ class Slave(StrategyBase):
                 'topks': topK_dict,
                 'done': False
             }
+            
+            # TEST
+            print("result test:" , response_data)
             self.send_fillmatirx(response_data)
             # test
 

@@ -13,9 +13,8 @@ substi_matrix = [[1,-1,-1,-1],
 substi_matrix = [[3 * substi_matrix[i][j] for j in range(len(substi_matrix[i]))] for i in range(len(substi_matrix))]
 
 
-#设置pattern和sequence的路径
-path_p = "./"
-path_s = "./"
+#block读取的文件路径
+dir_block = "./"
 
 
 """
@@ -102,7 +101,7 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K):
     aligned_s_s - seq的alignment结果
 
 """
-def trace_back(topK, start_s, end_s):
+def trace_back(topK, start_s, end_s, path_s, path_p):
     # n=1 #测试用
     continued = 1
     len_s = end_s - start_s + 1
@@ -205,8 +204,8 @@ def trace_back(topK, start_s, end_s):
     for i in range(len_align):
         aligned_p_all += aligned_p_s[len_align - i - 1]
         aligned_s_all += aligned_s_s[len_align - i - 1]
-    print(aligned_p_all)
-    print(aligned_s_all)
+    #print(aligned_p_all)
+    #print(aligned_s_all)
     return aligned_p_s, aligned_s_s
 
 #测试用
