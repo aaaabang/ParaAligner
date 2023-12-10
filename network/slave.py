@@ -187,7 +187,7 @@ class Slave(StrategyBase):
         # aligned_s_s - seq的alignment结果
         topK = {
             "value": data['topk_value'],
-            "i_subvec": 0, # TODO
+            # "i_subvec": 0, # TODO
             "xy": data['topk_pos']
         }
         # TODO
@@ -240,8 +240,10 @@ class Slave(StrategyBase):
                 self.handle_fillmatrix(task)
             elif task['type'] == 'traceback':
                 self.handle_traceback(task)
-            elif task['type'] == '':  # TODO 如果
-                self.handle_remake_command()
+            elif task == kv.CLOSED:  
+                print("Slave is closing.")
+                self.client.close()
+                break
 
 
     # test

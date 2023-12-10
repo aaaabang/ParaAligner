@@ -44,7 +44,7 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K):
     for i in range(1,len_r+1):
         for j in range(1,len_c+1):
             a = substi.index(seq_vec[j-1])
-            b = substi.index(pattern_vec[i-1])
+            b = substi.index(pattern_vec[i-1])         
             similarity = substi_matrix[a][b]
             score_matrix[i][j] = max([0,
                                       score_matrix[i-1][j-1] + similarity, 
