@@ -187,10 +187,8 @@ class Master(StrategyBase):
             # topKs = data['topKs']
             keys = [kv.Ith_PATTERN, kv.I_SUBVEC, kv.SUBVEC, kv.START, kv.END, kv.Done, kv.TOPKS]
             i_th_pattern, i_subv, subvec, start_ind, end_ind, done, topKs = map(itemgetter(*keys), [data] * len(keys))
+
             for i in range(len(subvec)):
-                print(f"slaves_states subvec: {self.slaves_states[rank-1]['subvec']} {type(self.slaves_states[rank-1]['subvec'])}")
-                print(f"{type(subvec[i])}")
-                # print(f"i_subv: {i_subv}, i: {i}, subvec length: {len(subvec)}, slaves_states subvec: {self.slaves_states[rank-1]['subvec']}")
                 self.slaves_states[rank-1]['subvec'].insert(i_subv*self.msg_size + i, subvec[i]) # TODO: check if this is correct
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
