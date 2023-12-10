@@ -1,5 +1,6 @@
 import os.path
-from seq import read_str,load_block
+from .seq import read_str
+from .files import load_block
 import numpy as np
 
 #设置空位罚分和置换矩阵

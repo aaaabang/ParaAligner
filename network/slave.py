@@ -34,7 +34,7 @@ class Slave(StrategyBase):
         data = "Heartbeat Response"
         data = pickle.dumps(data)
         self.client.send(self.master_addr, data)
-        # print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
+        print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
         
 
     def check_if_master_alive(self, timeout=5):
@@ -110,7 +110,7 @@ class Slave(StrategyBase):
             
             # test
             right_vec = right_vec.tolist()
-            
+
             response_data = {
                 'type': 'fillmatrix',
                 'i_th_pattern': data['i_th_pattern'],
@@ -223,7 +223,7 @@ class Slave(StrategyBase):
             # test TODO
             # self.handle_fillmatrix(task)
             # print("Slave is handling fillmatrix task.")
-
+ 
 
             # if self.stop_current_task:
             #     print("Slave is stopping current task.")
