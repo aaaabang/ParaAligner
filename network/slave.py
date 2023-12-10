@@ -100,6 +100,7 @@ class Slave(StrategyBase):
             # print(f"data 1:{data['i_subvec']}")
             pattern_subvec = pattern[data['i_subvec'] * subvec_length : (data['i_subvec'] + 1) * (subvec_length-1)]
 
+
             # print(f"pattern_subvec: {pattern_subvec}")
             # print(f"sequence: {sequence}")
             # print(f"up_vec: {up_vec}")
@@ -239,6 +240,8 @@ class Slave(StrategyBase):
                 self.handle_fillmatrix(task)
             elif task['type'] == 'traceback':
                 self.handle_traceback(task)
+            elif task['type'] == '':  # TODO 如果
+                self.handle_remake_command()
 
 
     # test

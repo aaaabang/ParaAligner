@@ -7,7 +7,7 @@ def worker(addr):
             'k': 1,   
             "database": "data/databases/test.txt",
             "patterns": [
-                # "data/patterns/small.fna",
+                "data/patterns/medium.txt",
                 "data/patterns/test.txt"
             ]}
     main(addr_list, addr, configs)
