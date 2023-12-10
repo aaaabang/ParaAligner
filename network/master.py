@@ -211,6 +211,7 @@ class Master(StrategyBase):
             if done:
                 # whole subvec, i.e rightmost column of a chunck, has been received
                 # ready to send to another slave for work
+                # print("self.slaves_states:", self.slaves_states)
                 files.save_block(self.slaves_states[addr]['subvec'], i_th_pattern, start_ind, end_ind)
                 files.save_topK(self.topKs, i_th_pattern)
                 self.__set_slave_idle(addr)

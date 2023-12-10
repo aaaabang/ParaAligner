@@ -97,6 +97,7 @@ class Slave(StrategyBase):
 
         #for data['i_subvec'] in range(num_subvecs):
         if data['i_subvec'] < self.num_subvecs - 1:
+            # print(f"data 1:{data['i_subvec']}")
             pattern_subvec = pattern[data['i_subvec'] * subvec_length : (data['i_subvec'] + 1) * (subvec_length-1)]
 
             # print(f"pattern_subvec: {pattern_subvec}")
@@ -131,6 +132,7 @@ class Slave(StrategyBase):
             print("response:" , response_data)
 
         elif data['i_subvec'] == self.num_subvecs - 1:
+            print(f"data 1:{data['i_subvec']}")
             pattern_subvec = pattern[data['i_subvec'] * subvec_length :]
             right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'])
             response_data = {
@@ -143,7 +145,8 @@ class Slave(StrategyBase):
                 'topks': topK_dict,
                 'done': True
             }
-            # self.send_fillmatirx(response_data)
+            print("result test:" , response_data)
+            self.send_fillmatirx(response_data)
 
      
 
