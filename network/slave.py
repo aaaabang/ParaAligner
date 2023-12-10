@@ -189,7 +189,8 @@ class Slave(StrategyBase):
             "i_subvec": 0, # TODO
             "xy": data['topk_pos']
         }
-
+        # TODO
+        block_size = data['start_ind'] - data['end_ind']
         aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'], sequence_path, pattern_path, i_th_pattern)
 
         # 将结果发送回 Master

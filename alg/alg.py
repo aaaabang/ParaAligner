@@ -1,7 +1,8 @@
 import os.path
-from .seq import read_str
+from .seq import read_str, get_str_length
 from .files import load_block
 import numpy as np
+import math
 
 #设置空位罚分和置换矩阵
 gap_penalty = -2
@@ -93,6 +94,8 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K):
 """
 def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     # n=1 #测试用
+    database_size = get_str_length(path_s)
+    block_size = int(math.sqrt(database_size))
     continued = 1
     len_s = end_s - start_s + 1
 
@@ -100,7 +103,7 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     aligned_s_s = []
 
     x,y = topK["xy"]
-    y -= topK["i_subvec"]*(end_s-start_s+1)
+    y -= topK["i_subvec"] * block_size
 
     while continued:
 

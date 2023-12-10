@@ -234,7 +234,7 @@ class Master(StrategyBase):
                 # ready to send to another slave for work
                 # print("self.slaves_states:", self.slaves_states)
                 files.save_block(self.slaves_states[rank-1]['subvec'], i_th_pattern, start_ind, end_ind)
-                # files.save_topK(self.topKs, i_th_pattern)
+                files.save_topK(self.topKs, i_th_pattern)
                 self.__set_slave_idle(addr)
                 del self.job_slave[(i_th_pattern, start_ind, end_ind)]
                 if end_ind >= self.database_size - 1:
