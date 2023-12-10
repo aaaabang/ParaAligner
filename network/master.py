@@ -4,6 +4,9 @@ from operator import itemgetter
 import pickle
 import queue
 import time
+
+import numpy
+
 from .base import StrategyBase
 from alg import files
 from .constant import key_value as kv
@@ -14,7 +17,7 @@ class Master(StrategyBase):
     def __init__(self, client):
         super().__init__(client)
         self.client = client
-        self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': []} for addr in self.client.addr_list if addr != client.addr]
+        self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': None} for addr in self.client.addr_list if addr != client.addr]
         # map job to slave {(i_th_pattern, start_ind, end_ind): slave_addr}
         self.job_slave = {}
         # save jobs for slaves
@@ -101,6 +104,7 @@ class Master(StrategyBase):
                         # update job_slave and slaves_states
                         self.job_slave[(i_th_pattern, start_ind, end_ind)] = slave['addr']
                         slave['idle'] = False
+                        slave[kv.SUBVEC] = numpy.zeros(self.patterns_sizes[i_th_pattern])
                         # send to slave
                         data = pickle.dumps(job)
                         self.client.send(slave['addr'], data)
@@ -201,7 +205,7 @@ class Master(StrategyBase):
             for i in range(len(subvec)):
                 # Assuming self.slaves_states[rank-1]['subvec'] is a list
                 subvec_list = self.slaves_states[rank-1]['subvec']
-                subvec_list.insert(i_subv * self.msg_size + i,subvec[i])
+                subvec_list[i_subv * self.msg_size] = subvec[i]
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
             if done:
