@@ -60,13 +60,13 @@ class Master(StrategyBase):
                     kv.TYPE: kv.F_TYPE
                 }
                 self.receive_queue.put(job_item)
-                # print("job_item", job_item)
+                print("job_item", job_item)
 
     
     def __send_heartbeat(self, interval=3):
 
         while((time.time() - self.last_heartbeat) < interval):
-            pass
+            return
 
         for slave in self.slaves_states:
             data = "Heartbeat"
@@ -106,8 +106,9 @@ class Master(StrategyBase):
                         self.client.send(slave['addr'], data)
                         # see if job is sent successfully, if not, put it back into queue
                         sent_flag = 1
-
+                        
                         print(f"send new job {job} to Slave{slave['addr']}")
+                        break
 
                 if sent_flag == 0:
                     # have not found a idle slave, put back job into queue
@@ -118,6 +119,8 @@ class Master(StrategyBase):
                 slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
                 data = pickle.dumps(job)
                 self.client.send(slave, data)
+                print(f"send new job {job} to Slave{slave}")
+
               
     '''
     1. Send Heatbeats
@@ -194,14 +197,10 @@ class Master(StrategyBase):
             start_ind = data[kv.START]
             end_ind = data[kv.END]
             done = data[kv.Done]
-            print(f"i_subv  {i_subv}")
 
             for i in range(len(subvec)):
                 # Assuming self.slaves_states[rank-1]['subvec'] is a list
                 subvec_list = self.slaves_states[rank-1]['subvec']
-                print(f"slaves_states subvec: {subvec_list} {type(subvec_list)}")
-
-                print(f"i_subv * self.msg_size + i: {i_subv * self.msg_size + i}")
                 subvec_list.insert(i_subv * self.msg_size + i,subvec[i])
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
@@ -222,7 +221,13 @@ class Master(StrategyBase):
             data[kv.END] = min(end_ind + self.block_size, self.database_size - 1)
             # job_item = {kv.Ith_PATTERN: i_th_pattern, kv.SUBVEC: subvec, 'start_ind': end_ind + 1, "end_ind": end_ind + self.block_size, 'i_subv': i_subv}
             self.receive_queue.put(data)
+            print("size queue", self.receive_queue.qsize())
+            queue_copy = self.receive_queue.queue.copy()
 
+            # 访问队列副本但不处理
+            while queue_copy:
+                item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
+                print("item", item)
         else:
             # traceback phase
             alignment = data[kv.ALI]
