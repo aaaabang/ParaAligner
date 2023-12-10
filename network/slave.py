@@ -80,13 +80,14 @@ class Slave(StrategyBase):
         M = len(pattern)    
         print(N, M) # test
         
+        subvec_length = len(data['subvec'])
         # 计算第一个subvec的长度, 用于判断传给fillmatrix的pattern的长度
         if data['i_subvec'] == 0:
-            subvec_length = len(data['subvec'])
-
-        # 计算一个 pattern 要划分成几个 subvec
-        num_subvecs, remainder = divmod(M, subvec_length)
-        num_subvecs += remainder > 0
+            # 计算一个 pattern 要划分成几个 subvec
+            self.num_subvecs, remainder = divmod(M, subvec_length)
+            self.num_subvecs += remainder > 0
+        
+        print(f"subvec:{self.num_subvecs}" )
 
         #如果是第一块, upvec传空, 否则传上一块的最后一行
         # up_vec = [0,0]
@@ -95,7 +96,7 @@ class Slave(StrategyBase):
         
 
         #for data['i_subvec'] in range(num_subvecs):
-        if data['i_subvec'] < num_subvecs - 1:
+        if data['i_subvec'] < self.num_subvecs - 1:
             pattern_subvec = pattern[data['i_subvec'] * subvec_length : (data['i_subvec'] + 1) * (subvec_length-1)]
 
             # print(f"pattern_subvec: {pattern_subvec}")
@@ -129,9 +130,9 @@ class Slave(StrategyBase):
 
             print("response:" , response_data)
 
-        elif data['i_subvec'] == num_subvecs - 1:
+        elif data['i_subvec'] == self.num_subvecs - 1:
             pattern_subvec = pattern[data['i_subvec'] * subvec_length :]
-            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.configs['k'])
+            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'])
             response_data = {
                 'type': 'fillmatrix',
                 'i_th_pattern': data['i_th_pattern'],
@@ -218,8 +219,9 @@ class Slave(StrategyBase):
         #     time.sleep(5)
 
 
-        if not self.job_queue.empty():
+        while not self.job_queue.empty():
             task = self.job_queue.get()
+            # print("Current job_queue contents:", list(self.job_queue.queue))
             # test TODO
             # self.handle_fillmatrix(task)
             # print("Slave is handling fillmatrix task.")
