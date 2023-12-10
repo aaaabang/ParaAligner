@@ -11,6 +11,8 @@ import numpy
 from .base import StrategyBase
 from alg import files
 from .constant import key_value as kv
+from .constant import params
+
 import numpy as np
 from alg.seq import get_str_length
 class Master(StrategyBase):
@@ -27,7 +29,7 @@ class Master(StrategyBase):
         self.topKs = {}
         
         # send and receive a msg of 50 grids at a time within a subvector
-        self.msg_size = 50
+        self.msg_size = params.SUBVEC_SIZE
         # divide database into blocks
         self.database_size = get_str_length(self.client.configs[kv.DATABASE])
         self.block_size = int(math.sqrt(self.database_size))
@@ -36,10 +38,14 @@ class Master(StrategyBase):
         # the last time master sends heartbeat
         self.last_heartbeat = 0
 
+        self.exist_aligns = 0
+        self.total_aligns = 0
+
         self.__init_jobs()
         
     def __init_jobs(self):   
         patterns = self.client.configs[kv.PATTERN]
+        self.total_aligns = len(patterns)*self.client.configs['k']
         for i, pt in enumerate(patterns):
             self.patterns_sizes.append(get_str_length(pt))
             # print(f"{i} th pattern's size is {self.patterns_sizes[i]}")
@@ -64,7 +70,7 @@ class Master(StrategyBase):
                     kv.TYPE: kv.F_TYPE
                 }
                 self.receive_queue.put(job_item)
-                print("job_item", job_item)
+                # print("job_item", job_item)
 
     
     def __send_heartbeat(self, interval=3):
@@ -105,15 +111,15 @@ class Master(StrategyBase):
                         slave['idle'] = False
                         data = pickle.dumps(job)
                         self.client.send(slave['addr'], data)
+                        print(f"[send traceback] new job {job} to Slave{slave['addr']}")
+
                         # see if job is sent successfully, if not, put it back into queue
                         sent_flag = 1
                         break
                 if sent_flag == 0:
                     # have not found a idle slave, put back job into queue
                     self.receive_queue.put(job)
-
-                return
-            
+                continue
             # Fillmatrix job
             if job[kv.I_SUBVEC] == 0:
                 # find a new slave for a new job
@@ -130,7 +136,7 @@ class Master(StrategyBase):
                         # see if job is sent successfully, if not, put it back into queue
                         sent_flag = 1
                         
-                        print(f"send new job {job} to Slave{slave['addr']}")
+                        print(f"[send fillmartix] new job {job} to Slave{slave['addr']}")
                         break
 
                 if sent_flag == 0:
@@ -139,7 +145,19 @@ class Master(StrategyBase):
                     return
 
             else:
-                slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
+                slave = None
+                try:
+                    slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
+
+                except Exception as e:
+                    print(f"Exception {e}")
+                    print(f"job: {job}")
+                    queue_copy = self.receive_queue.queue.copy()
+
+                    # 访问队列副本但不处理
+                    while queue_copy:
+                        item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
+                        print("item", item)
                 data = pickle.dumps(job)
                 self.client.send(slave, data)
                 print(f"send new job {job} to Slave{slave}")
@@ -188,7 +206,9 @@ class Master(StrategyBase):
                 kv.TOPK_POS: topk["pos"],
                 kv.TOPK_VALUE: topk["val"],
                 kv.START: topk[kv.START],
-                kv.END: topk[kv.END]
+                kv.END: topk[kv.END],
+                kv.DB_SIZE: self.database_size
+
             }
             self.receive_queue.put(job_item)
     
@@ -251,7 +271,7 @@ class Master(StrategyBase):
             # job_item = {kv.Ith_PATTERN: i_th_pattern, kv.SUBVEC: subvec, 'start_ind': end_ind + 1, "end_ind": end_ind + self.block_size, 'i_subv': i_subv}
             self.receive_queue.put(data)
             print("size queue", self.receive_queue.qsize())
-            queue_copy = self.receive_queue.queue.copy()
+            # queue_copy = self.receive_queue.queue.copy()
 
             # # 访问队列副本但不处理
             # while queue_copy:
@@ -271,4 +291,16 @@ class Master(StrategyBase):
             self.job_slave = dict(filter(lambda item: item[1] != addr, self.job_slave.items()))
             files.save_output(i_th_pattern, alignment, topK_val)
             print(f"{i_th_pattern} pattern get one alignment of topk {topK_val} : {alignment}")
-        pass
+
+            self.exist_aligns += 1
+            print(f"self.exist_aligns {self.exist_aligns}")
+            print(f"self.total_aligns {self.total_aligns}")
+
+            if self.exist_aligns >= self.total_aligns:
+                print("master close")
+                for addr in self.client.addr_list:
+                    if addr != self.client.addr:
+                        data = kv.CLOSE
+                        data = pickle.dumps(data)
+                        self.client.send(addr, data)
+                self.client.close()

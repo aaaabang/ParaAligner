@@ -1,0 +1,1 @@
+SUBVEC_SIZE = 50

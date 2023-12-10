@@ -17,6 +17,11 @@ T_TYPE = "traceback"
 TOPK_VALUE = "topk_value"
 TOPK_POS = "topk_pos"
 ALI = "alignment"
+DB_SIZE = "database_size"
+
 #config
 DATABASE = "database"
 PATTERN = "patterns"
+
+#close
+CLOSE = "close"
