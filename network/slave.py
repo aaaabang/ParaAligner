@@ -190,7 +190,7 @@ class Slave(StrategyBase):
             "xy": data['topk_pos']
         }
 
-        aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'], sequence_path, pattern_path)
+        aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'], sequence_path, pattern_path, i_th_pattern)
 
         # 将结果发送回 Master
         response_data = {

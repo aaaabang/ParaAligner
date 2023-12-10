@@ -10,6 +10,7 @@ output_dir = './output'
 
 
 def fs_init():
+    print('??')
     if os.path.exists(backup_dir):
         shutil.rmtree(backup_dir)
     if os.path.exists(output_dir):
@@ -22,6 +23,10 @@ def fs_init():
 def fs_close():
     if os.path.exists(backup_dir):
         shutil.rmtree(backup_dir)
+
+
+def fs_recover_info():
+    pass
 
 
 def load_block(i_th_pattern, col_ind):
