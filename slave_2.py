@@ -12,7 +12,7 @@ def worker(addr):
                 'k': 2,   
                 "database": "data/databases/test.txt",
                 "patterns": [
-                    "data/patterns/medium.txt",
+                    # "data/patterns/medium.txt",
                     "data/patterns/test.txt"
                     
                 ]}

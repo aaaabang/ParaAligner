@@ -84,8 +84,9 @@ class Slave(StrategyBase):
         # 计算第一个subvec的长度, 用于判断传给fillmatrix的pattern的长度
         if data['i_subvec'] == 0:
             # 计算一个 pattern 要划分成几个 subvec
-            self.num_subvecs, remainder = divmod(M, subvec_length)
-            self.num_subvecs += remainder > 0
+            # self.num_subvecs, remainder = divmod(M, subvec_length)
+            # self.num_subvecs += remainder > 0
+            self.num_subvecs = int(M/(subvec_length - 1)) + 1
         
         print(f"subvec:{self.num_subvecs}" )
 
@@ -98,7 +99,7 @@ class Slave(StrategyBase):
         #for data['i_subvec'] in range(num_subvecs):
         if data['i_subvec'] < self.num_subvecs - 1:
             # print(f"data 1:{data['i_subvec']}")
-            pattern_subvec = pattern[data['i_subvec'] * subvec_length : (data['i_subvec'] + 1) * (subvec_length-1)]
+            pattern_subvec = pattern[data['i_subvec'] * (subvec_length-1) : (data['i_subvec'] + 1) * (subvec_length-1) ]
 
 
             # print(f"pattern_subvec: {pattern_subvec}")
@@ -131,7 +132,7 @@ class Slave(StrategyBase):
 
         elif data['i_subvec'] == self.num_subvecs - 1:
             print(f"data 1:{data['i_subvec']}")
-            pattern_subvec = pattern[data['i_subvec'] * subvec_length :]
+            pattern_subvec = pattern[data['i_subvec'] * (subvec_length-1) :]     
             right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'])
             response_data = {
                 'type': 'fillmatrix',
