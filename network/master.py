@@ -15,6 +15,10 @@ from .constant import params
 
 import numpy as np
 from alg.seq import get_str_length
+
+
+INT_MIN = np.iinfo(np.int32).min // 2
+
 class Master(StrategyBase):
 
     def __init__(self, client):
@@ -67,7 +71,7 @@ class Master(StrategyBase):
                     break
                 else:
                     size = min(remain_subvec_size, self.msg_size)
-                    subvec = np.zeros(size)
+                    subvec = np.full(size, INT_MIN)
                     # total_size += size
                     # print(f"size:{size} total {total_size}")
                     # print("total", total_subvec_number)
@@ -276,7 +280,7 @@ class Master(StrategyBase):
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
 
-            if done:
+            if not (self.slaves_states[rank-1]['subvec'] == INT_MIN).any():
                 # whole subvec, i.e rightmost column of a chunck, has been received
                 # ready to send to another slave for work
                 # print("self.slaves_states:", self.slaves_states)
