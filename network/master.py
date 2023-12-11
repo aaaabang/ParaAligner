@@ -158,10 +158,15 @@ class Master(StrategyBase):
                     return
 
             else:
-                slave = None
                 try:
-                    slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
-
+                    key = (i_th_pattern, start_ind, end_ind)
+                    if key in self.job_slave:
+                        slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
+                        data = pickle.dumps(job)
+                        self.client.send(slave, data)
+                        print(f"send new job {job} to Slave{slave}")
+                    else:
+                        self.receive_queue.put(job)
                 except Exception as e:
                     print(f"Exception {e}")
                     print(f"job: {job}")
@@ -171,9 +176,7 @@ class Master(StrategyBase):
                     while queue_copy:
                         item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
                         print("item", item)
-                data = pickle.dumps(job)
-                self.client.send(slave, data)
-                print(f"send new job {job} to Slave{slave}")
+
 
               
     '''
@@ -255,13 +258,21 @@ class Master(StrategyBase):
             end_ind = data[kv.END]
             done = data[kv.Done]
 
+
             for i in range(len(subvec)):
                 # Assuming self.slaves_states[rank-1]['subvec'] is a list
                 subvec_list = self.slaves_states[rank-1]['subvec']
                 if (i_subv == 0):
-                    subvec[i] = subvec[i]
+                    subvec_list[i] = subvec[i]
                 else:
-                    subvec_list[i_subv * self.msg_size + i] = subvec[i+1]
+                    if i+1 >= len(subvec):
+                        break
+                    # j = -99:
+                    subvec_list[self.msg_size + (i_subv-1)*(self.msg_size-2) + i] = subvec[i+1]
+                    # j = self.msg_size + (i_subv-1)*(self.msg_size-1) + i
+                    # print("i_subv*self.msg_size + i",j)
+                    # print("i+1",i+1)
+                    # print("subvec_list, ", subvec_list)
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
 
