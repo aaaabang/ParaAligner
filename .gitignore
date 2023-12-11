@@ -6,3 +6,5 @@ playground*
 __pycache__/
 backup/
 output/
+SlurmLog_*
+.nfs*
