@@ -3,6 +3,7 @@ import queue
 import time
 import json
 import pickle
+import numpy as np
 
 from .base import StrategyBase
 from alg.alg import fill_matrix, trace_back
@@ -28,6 +29,7 @@ class Slave(StrategyBase):
         # 停止任务的标志
         self.master_timed_out = False
         self.stop_current_task = False
+        self.previous_bottom_vec = np.zeros(0) #加了
         
 
     def send_heartbeat_response(self):
@@ -67,13 +69,14 @@ class Slave(StrategyBase):
        
             # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
-        sequence = read_str(self.client.configs['database'], data['start_ind'], data['end_ind'])
-        # sequence = read_str("data/databases/test.txt", data['start_ind'], data['end_ind'])
-        print(f"sequence: {sequence}") # test
+        # sequence = read_str(self.client.configs['database'], data['start_ind'], data['end_ind'])
+        sequence = read_str("data/databases/test.txt", data['start_ind'], data['end_ind'])
+        # print(f"sequence: {sequence}") # test
 
         pat_len = get_str_length(self.client.configs['patterns'][i_th_pattern])
         pattern = read_str(self.client.configs['patterns'][i_th_pattern], 0, pat_len)
         
+        # pattern = read_str("data/patterns/test.txt", 0, 16)
         # pattern = read_str("data/patterns/medium.txt", 0, pat_len)
         print(f"pattern: {pattern}") # test
 
