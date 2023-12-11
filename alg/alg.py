@@ -2,6 +2,7 @@ import os.path
 from .seq import read_str, get_str_length
 from .files import load_block
 from network.constant.params import SUBVEC_SIZE
+from network.constant.params import SUBVEC_SIZE
 import numpy as np
 import math
 
@@ -40,11 +41,21 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
     # print(f"len(left_vec):{len(left_vec)}")
     # print(f"len_p:{len_p}")
     # print(f"i_vec:{i_vec}")
+def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
+    len_p = len(pattern_vec)
+    len_s = len(seq_vec)
+    i_seq = int(start_ind/len_s)
+    # print(f"len(pattern_vec):{len(pattern_vec)}")
+    # print(f"len(left_vec):{len(left_vec)}")
+    # print(f"len_p:{len_p}")
+    # print(f"i_vec:{i_vec}")
 
     # 初始化得分矩阵
     len_r = len_p
     len_c = len(seq_vec)
     score_matrix = np.zeros((len_r + 1, len_c + 1), dtype = int)
+    if len(left_vec)>len_p+1: #p只有一块，且小于SUBVEC_SIZE-1的情况:取subvec的前len_p个值
+        left_vec = left_vec[:len_p+1]
     if len(left_vec)>len_p+1: #p只有一块，且小于SUBVEC_SIZE-1的情况:取subvec的前len_p个值
         left_vec = left_vec[:len_p+1]
     score_matrix[: , 0] = left_vec #第一列设为传来的左边界值
@@ -54,6 +65,7 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
     for i in range(1,len_r+1):
         for j in range(1,len_c+1):
             a = substi.index(seq_vec[j-1])
+            b = substi.index(pattern_vec[i-1])      
             b = substi.index(pattern_vec[i-1])      
             similarity = substi_matrix[a][b]
             score_matrix[i][j] = max([0,
@@ -78,6 +90,14 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
         # print(f"(x,y):{(x,y)}")
         # print(f"(x_abs,y_abs):{(x_abs,y_abs)}")
 
+    for value,(x,y)in zip(topK_values, zip(*topK_xy)):
+        # 计算绝对坐标
+        x_abs = i_vec * (SUBVEC_SIZE - 1) + x
+        y_abs = i_seq * len_s + y
+        topK_list.append((value, (x_abs,y_abs)))
+        # print(f"(x,y):{(x,y)}")
+        # print(f"(x_abs,y_abs):{(x_abs,y_abs)}")
+
     Kth_value = topK_values[-1]
     Kvalue_indices_flat = np.argwhere(flat == Kth_value).flatten()
     if len(Kvalue_indices_flat) > 1:
@@ -87,10 +107,16 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
                 x_abs = i_vec * (SUBVEC_SIZE - 1) + x
                 y_abs = i_seq * len_s + y
                 topK_list.append((Kth_value, (x_abs,y_abs)))
+                x,y = np.unravel_index(index, (len_r, len_c))
+                x_abs = i_vec * (SUBVEC_SIZE - 1) + x
+                y_abs = i_seq * len_s + y
+                topK_list.append((Kth_value, (x_abs,y_abs)))
 
+    print(score_matrix) #测试用
     print(score_matrix) #测试用
     # print(right_vec)
     # print(bottom_vec)
+    # print(topK_list)
     # print(topK_list)
 
     return right_vec, bottom_vec, topK_list
