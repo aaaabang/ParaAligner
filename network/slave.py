@@ -93,7 +93,7 @@ class Slave(StrategyBase):
             # self.num_subvecs += remainder > 0
             self.num_subvecs = int(M/(subvec_length - 1)) + 1   #改了
         
-        print(f"subvec:{self.num_subvecs}" )
+        print(f"subvec_nums:{self.num_subvecs}" )
 
         #如果是第一块, upvec传空, 否则传上一块的最后一行
         # up_vec = [0,0]
@@ -139,6 +139,7 @@ class Slave(StrategyBase):
             print(f"data 1:{data['i_subvec']}")
             pattern_subvec = pattern[data['i_subvec'] * (SUBVEC_SIZE-1) :]   #改了 
             right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'],data['start_ind'])
+            right_vec = right_vec.tolist()
             response_data = {
                 'type': 'fillmatrix',
                 'i_th_pattern': data['i_th_pattern'],
