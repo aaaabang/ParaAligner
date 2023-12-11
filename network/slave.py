@@ -247,10 +247,7 @@ class Slave(StrategyBase):
                 self.handle_fillmatrix(task)
             elif task['type'] == 'traceback':
                 self.handle_traceback(task)
-            elif task == kv.CLOSED:  
-                print("Slave is closing.")
-                self.client.close()
-                break
+
 
 
     # test
@@ -299,6 +296,9 @@ class Slave(StrategyBase):
                 # print("Slave received heartbeat from Master")
             # elif data == 'remake':
             #     self.handle_remake_command()
+            elif data == kv.CLOSE:  
+                print("Slave is closing.")
+                self.client.close()
             else:
                 self.job_queue.put(data)
                 print("Slave received data from Master")
