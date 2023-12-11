@@ -142,7 +142,7 @@ class Master(StrategyBase):
                         slave['idle'] = False
                         # update job_slave and slaves_states
                         self.job_slave[(i_th_pattern, start_ind, end_ind)] = slave['addr']
-                        slave[kv.SUBVEC] = numpy.zeros(self.patterns_sizes[i_th_pattern])
+                        slave[kv.SUBVEC] = numpy.zeros(self.patterns_sizes[i_th_pattern] + 1)
                         # send to slave
                         data = pickle.dumps(job)
                         self.client.send(slave['addr'], data)
@@ -258,7 +258,10 @@ class Master(StrategyBase):
             for i in range(len(subvec)):
                 # Assuming self.slaves_states[rank-1]['subvec'] is a list
                 subvec_list = self.slaves_states[rank-1]['subvec']
-                subvec_list[i_subv * self.msg_size] = subvec[i]
+                if (i_subv == 0):
+                    subvec[i] = subvec[i]
+                else:
+                    subvec_list[i_subv * self.msg_size + i] = subvec[i+1]
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
 
