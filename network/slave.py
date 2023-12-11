@@ -6,6 +6,7 @@ import pickle
 
 from .base import StrategyBase
 from alg.alg import fill_matrix, trace_back
+from network.constant.params import SUBVEC_SIZE
 # from alg.test_alg import fill_matrix, trace_back
 from alg.seq import read_str, get_str_length
 from .constant import key_value as kv
@@ -81,6 +82,7 @@ class Slave(StrategyBase):
         print(N, M) # test
         
         subvec_length = len(data['subvec'])
+
         # 计算第一个subvec的长度, 用于判断传给fillmatrix的pattern的长度
         if data['i_subvec'] == 0:
             # 计算一个 pattern 要划分成几个 subvec
@@ -109,7 +111,7 @@ class Slave(StrategyBase):
             # print(f"data['start_ind']: {data['start_ind']}")
             # print(f"data['end_ind']: {data['end_ind']}")
             # print(f"self.client.K: {self.configs['k']}")
-            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'])
+            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'],data['start_ind']) #加了个参数
             self.previous_bottom_vec = bottom_vec
             
             # test
@@ -132,8 +134,8 @@ class Slave(StrategyBase):
 
         elif data['i_subvec'] == self.num_subvecs - 1:
             print(f"data 1:{data['i_subvec']}")
-            pattern_subvec = pattern[data['i_subvec'] * (subvec_length-1) :]   #改了  
-            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'])
+            pattern_subvec = pattern[data['i_subvec'] * (SUBVEC_SIZE-1) :]   #改了 
+            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'],data['start_ind'])
             response_data = {
                 'type': 'fillmatrix',
                 'i_th_pattern': data['i_th_pattern'],
