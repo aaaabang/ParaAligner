@@ -48,16 +48,30 @@ class Master(StrategyBase):
         self.total_aligns = len(patterns)*self.client.configs['k']
         for i, pt in enumerate(patterns):
             self.patterns_sizes.append(get_str_length(pt))
+            total_subvec_number = 0
+            should_subvec_number = int(get_str_length(pt)/(params.SUBVEC_SIZE - 1)) + 1
+            # print("should", should_subvec_number)
             # print(f"{i} th pattern's size is {self.patterns_sizes[i]}")
             j = -1 # i_subvec
             while True:
-                current_subvec_size = (j+1)* self.msg_size
-                remain_subvec_size = self.patterns_sizes[i] - current_subvec_size
-                if(remain_subvec_size <= 0):
+
+                current_subvec_size = (j+1)* (self.msg_size-1) + 1
+                remain_subvec_size = (self.patterns_sizes[i] + 1) - current_subvec_size + 1
+                # print("remain:", remain_subvec_size)
+                # print("curren_subvec: ", current_subvec_size)
+                # print("self pat: ", self.patterns_sizes[i])
+                if(total_subvec_number >= should_subvec_number):
+                    # print("curren_subvec: ", current_subvec_size)
+                    # print("self pat: ", self.patterns_sizes[i])
+
                     break
                 else:
                     size = min(remain_subvec_size, self.msg_size)
                     subvec = np.zeros(size)
+                    # total_size += size
+                    # print(f"size:{size} total {total_size}")
+                    # print("total", total_subvec_number)
+                    total_subvec_number += 1
                     j += 1
 
                 job_item = {
@@ -72,7 +86,6 @@ class Master(StrategyBase):
                 self.receive_queue.put(job_item)
                 # print("job_item", job_item)
 
-    
     def __send_heartbeat(self, interval=3):
 
         while((time.time() - self.last_heartbeat) < interval):
