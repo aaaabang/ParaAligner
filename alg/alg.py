@@ -36,26 +36,16 @@ dir_block = "./"
 def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
     len_p = len(pattern_vec)
     len_s = len(seq_vec)
-    i_seq = int(start_ind/len_s)
-    # print(f"len(pattern_vec):{len(pattern_vec)}")
+    # i_seq = int(start_ind/len_s)
+    # print(f"len(pattern_vec):{len_p}")
     # print(f"len(left_vec):{len(left_vec)}")
-    # print(f"len_p:{len_p}")
-    # print(f"i_vec:{i_vec}")
-def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
-    len_p = len(pattern_vec)
-    len_s = len(seq_vec)
-    i_seq = int(start_ind/len_s)
-    # print(f"len(pattern_vec):{len(pattern_vec)}")
-    # print(f"len(left_vec):{len(left_vec)}")
-    # print(f"len_p:{len_p}")
+    # print(f"len_s:{len_s}")
     # print(f"i_vec:{i_vec}")
 
     # 初始化得分矩阵
     len_r = len_p
-    len_c = len(seq_vec)
+    len_c = len_s
     score_matrix = np.zeros((len_r + 1, len_c + 1), dtype = int)
-    if len(left_vec)>len_p+1: #p只有一块，且小于SUBVEC_SIZE-1的情况:取subvec的前len_p个值
-        left_vec = left_vec[:len_p+1]
     if len(left_vec)>len_p+1: #p只有一块，且小于SUBVEC_SIZE-1的情况:取subvec的前len_p个值
         left_vec = left_vec[:len_p+1]
     score_matrix[: , 0] = left_vec #第一列设为传来的左边界值
@@ -64,9 +54,11 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
     # 计算得分矩阵
     for i in range(1,len_r+1):
         for j in range(1,len_c+1):
+            # print(f"len_p:{len_p}")
+            # print(f"(i-1,j-1):{(i-1,j-1)}")
+            # print(f"pattern_vec[i-1]:{pattern_vec[i-1]}")
             a = substi.index(seq_vec[j-1])
-            b = substi.index(pattern_vec[i-1])      
-            b = substi.index(pattern_vec[i-1])      
+            b = substi.index(pattern_vec[i-1])          
             similarity = substi_matrix[a][b]
             score_matrix[i][j] = max([0,
                                       score_matrix[i-1][j-1] + similarity, 
@@ -85,15 +77,8 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
     for value,(x,y)in zip(topK_values, zip(*topK_xy)):
         # 计算绝对坐标
         x_abs = i_vec * (SUBVEC_SIZE - 1) + x
-        y_abs = i_seq * len_s + y
-        topK_list.append((value, (x_abs,y_abs)))
-        # print(f"(x,y):{(x,y)}")
-        # print(f"(x_abs,y_abs):{(x_abs,y_abs)}")
-
-    for value,(x,y)in zip(topK_values, zip(*topK_xy)):
-        # 计算绝对坐标
-        x_abs = i_vec * (SUBVEC_SIZE - 1) + x
-        y_abs = i_seq * len_s + y
+        # y_abs = i_seq * len_s + y
+        y_abs = start_ind+y
         topK_list.append((value, (x_abs,y_abs)))
         # print(f"(x,y):{(x,y)}")
         # print(f"(x_abs,y_abs):{(x_abs,y_abs)}")
@@ -105,11 +90,8 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
             if index not in topK_indices_flat:
                 x,y = np.unravel_index(index, (len_r, len_c))
                 x_abs = i_vec * (SUBVEC_SIZE - 1) + x
-                y_abs = i_seq * len_s + y
-                topK_list.append((Kth_value, (x_abs,y_abs)))
-                x,y = np.unravel_index(index, (len_r, len_c))
-                x_abs = i_vec * (SUBVEC_SIZE - 1) + x
-                y_abs = i_seq * len_s + y
+                # y_abs = i_seq * len_s + y
+                y_abs = start_ind+y
                 topK_list.append((Kth_value, (x_abs,y_abs)))
 
     print(score_matrix) #测试用
@@ -142,18 +124,18 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     database_size = get_str_length(path_s)
     block_size = int(math.sqrt(database_size))
     continued = 1
-    len_s = end_s - start_s + 1
+    len_s = block_size
 
     aligned_p_s = []
     aligned_s_s = []
 
     x,y = topK["xy"]
-    print(f"len_s:{len_s}")
-    print(f"start_s:{start_s}")
+    # print(f"len_s:{len_s}")
+    # print(f"start_s:{start_s}")
     i_subseq = int(start_s/len_s)
     y -= i_subseq * block_size
-    print(f"x:{x}")
-    print(f"y:{y}")
+    # print(f"x:{x}")
+    # print(f"y:{y}")
 
     while continued:
 
@@ -173,15 +155,20 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         # pattern_vec = "GGTTGACTA" #测试用
 
         #初始化得分矩阵和回溯矩阵
-        len_r = len(left_vec)
+        len_r = len(pattern_vec)
         len_c = len(seq_vec)
         score_matrix = np.zeros((len_r + 1, len_c + 1), dtype=int)
-        score_matrix[1:, 0] = left_vec  # 第一列设为读取的左边界值
+        score_matrix[:, 0] = left_vec  # 第一列设为读取的左边界值
         trace_matrix = np.zeros((len_r , len_c ), dtype=int)
 
         #重新计算得分矩阵,并记录回溯矩阵
         for i in range(1,len_r+1):
             for j in range(1,len_c+1):
+                # print(f"len(pattern_vec):{len(pattern_vec)}")
+                # print(f"len(left_vec):{len(left_vec)}")
+                # print(f"len_s:{len_s}")
+                # print(f"(i-1,j-1):{(i-1,j-1)}")
+                # print(f"pattern_vec[i-1]:{pattern_vec[i-1]}")
                 a = substi.index(seq_vec[j-1])
                 b = substi.index(pattern_vec[i-1])
                 similarity = substi_matrix[a][b]
@@ -243,8 +230,9 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         # n += 1  # 测试用
         # print(score_matrix.shape)
         # print(trace_matrix.shape)
-        # print(aligned_p)
-        # print(aligned_s)
+        print("i_subseq",i_subseq)
+        print(aligned_p)
+        print(aligned_s)
 
     # 拼接alignment
     aligned_p_all = ""
@@ -254,8 +242,8 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         aligned_p_all += aligned_p_s[len_align - i - 1]
         aligned_s_all += aligned_s_s[len_align - i - 1]
    
-    print(aligned_p_all)
-    print(aligned_s_all)
+    # print(aligned_p_all)
+    # print(aligned_s_all)
 
     return aligned_p_all, aligned_s_all
 
