@@ -78,11 +78,11 @@ class Slave(StrategyBase):
         
         # pattern = read_str("data/patterns/test.txt", 0, 16)
         # pattern = read_str("data/patterns/medium.txt", 0, pat_len)
-        print(f"pattern: {pattern}") # test
+        # print(f"pattern: {pattern}") # test
 
         N = len(sequence)
         M = len(pattern)    
-        print(N, M) # test
+        # print(N, M) # test
         
         subvec_length = len(data['subvec'])
 
@@ -232,15 +232,6 @@ class Slave(StrategyBase):
 
         while not self.job_queue.empty():
             task = self.job_queue.get()
-            # print("Current job_queue contents:", list(self.job_queue.queue))
-            # test TODO
-            # self.handle_fillmatrix(task)
-            # print("Slave is handling fillmatrix task.")
- 
-
-            # if self.stop_current_task:
-            #     print("Slave is stopping current task.")
-            #     continue  # 跳过当前任务    
                           
             if task['type'] == 'fillmatrix':
                 print("job type is fillmatrix")
