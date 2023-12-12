@@ -53,17 +53,17 @@ class Master(StrategyBase):
     def __init_jobs(self):   
         patterns = self.client.configs[kv.PATTERN]
         self.total_aligns = len(patterns)*self.client.configs['k']
-
         backup = files.fs_recover_info(self.client.configs)
-        for i, pt in backup:
+        print(backup)
+        for i, pt in enumerate(backup):
             self.patterns_sizes.append(get_str_length(patterns[i]))
-            if(backup['last_col'] != None):
-                total_subvec = backup['last_col']
+            if(pt['latest_col'] != None):
+                total_subvec = pt['last_col']
             else:
-                total_subvec = np.full(len(self.patterns_sizes), INI_MIN)
+                total_subvec = np.full(len(self.patterns_sizes), INT_MIN)
 
             total_subvec_number = 0
-            should_subvec_number = int(get_str_length(pt)/(params.SUBVEC_SIZE - 1)) + 1
+            should_subvec_number = int(get_str_length(patterns[i])/(params.SUBVEC_SIZE - 1)) + 1
             j = -1 # i_subvec
             st_subvec = 0
             end_subvec = 0
@@ -85,7 +85,7 @@ class Master(StrategyBase):
                         break
 
                     end_subvec = st_subvec + size
-                    subvec = total_subvec[st_subvec, end_subvec]
+                    subvec = total_subvec[st_subvec:end_subvec]
                     subvec += size - 1
                     # total_size += size
                     # print(f"size:{size} total {total_size}")

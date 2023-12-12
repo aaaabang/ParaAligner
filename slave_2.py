@@ -14,8 +14,10 @@ def worker(addr):
                 "patterns": [
                     # "data/patterns/medium.txt",
                     "data/patterns/test.txt"
-                    
-                ]}
+                ],
+                "backup_folder": "backup"
+
+                }
     main(addr_list, addr, configs)
 
 

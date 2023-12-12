@@ -69,6 +69,7 @@ def fs_recover_info(config):
                     break
             state[pattern]['latest_col'] = latest_col
     print(state)
+    return state
 
 
 def load_block(i_th_pattern, col_ind):
