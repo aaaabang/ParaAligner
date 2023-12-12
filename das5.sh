@@ -3,6 +3,7 @@
 for file in $(find . -maxdepth 1 -type f \( -name "SlurmLog_*" -o -name ".nfs*" \)); do
     echo "remove temporary log: $file"
     rm "$file"
+    rm ./output/*
 done
 
 sbatch_output=$(sbatch job.slurm)

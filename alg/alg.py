@@ -7,14 +7,25 @@ import numpy as np
 import math
 
 #设置空位罚分和置换矩阵
-gap_penalty = -1
+gap_penalty = -5
 substi = "ACGTN"
-substi_matrix = [[1,-1,-1,-1,-1],
-                 [-1,1,-1,-1,-1],
-                 [-1,-1,1,-1,-1],
-                 [-1,-1,-1,1,-1],
-                 [-1,-1,-1,-1,1]]
-substi_matrix = [[3 * substi_matrix[i][j] for j in range(len(substi_matrix[i]))] for i in range(len(substi_matrix))]
+match = 3
+mismatch = -2
+substi_matrix = np.zeros((5,5),dtype = int)
+for i in range(5):
+    for j in range(5):
+        if i == j:
+            substi_matrix[i][j] = match
+        else:
+            substi_matrix[i][j] = mismatch
+
+
+# substi_matrix = [[1,-1,-1,-1,-1],
+#                  [-1,1,-1,-1,-1],
+#                  [-1,-1,1,-1,-1],
+#                  [-1,-1,-1,1,-1],
+#                  [-1,-1,-1,-1,1]]
+# substi_matrix = [[3 * substi_matrix[i][j] for j in range(len(substi_matrix[i]))] for i in range(len(substi_matrix))]
 
 #block读取的文件路径
 dir_block = "./"
@@ -94,8 +105,7 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
                 y_abs = start_ind+y
                 topK_list.append((Kth_value, (x_abs,y_abs)))
 
-    print(score_matrix) #测试用
-    print(score_matrix) #测试用
+    # print(score_matrix) #测试用
     # print(right_vec)
     # print(bottom_vec)
     # print(topK_list)
@@ -137,6 +147,8 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     while continued:
 
         #读取相应子sequece、左边界值、pattern
+        # print("start_s:",start_s)
+        # print("end_s:",end_s)
         seq_vec = read_str(path_s, start_s, end_s)
         i_subseq = int(start_s/block_size)
         # seq_vec = "TGTTACGG" #测试用
@@ -219,6 +231,9 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
             x = x_current
 
         #更新seq索引
+        if start_s < block_size and end_s < block_size:
+            continued = 0
+
         start_s = start_s - block_size
         end_s = end_s - block_size
 
@@ -228,10 +243,10 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         # n += 1  # 测试用
         # print(score_matrix.shape)
         # print(trace_matrix.shape)
-        print("i_subseq",i_subseq)
-        print("start_s",start_s)
-        print("end_s",end_s)
-        print("seq",seq_vec)
+        # print("i_subseq",i_subseq)
+        # print("start_s",start_s)
+        # print("end_s",end_s)
+        # print("seq",seq_vec)
         print(aligned_p)
         print(aligned_s)
 

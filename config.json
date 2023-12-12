@@ -1,9 +1,7 @@
 {
-  "database": "data/databases/covid1.fna",
+  "database": "data/databases/covid1.txt",
   "patterns": [
-    "data/patterns/test_fna",
-    "data/patterns/small.fna",
-    "data/patterns/medium.txt"
+    "data/patterns/test.txt"
   ],
   "backup_folder": "backup",
   "k": 3
