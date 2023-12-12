@@ -22,7 +22,8 @@ class Slave(StrategyBase):
         self.rank = client.rank # rank of this slave 
         self.last_heartbeat_time = time.time()
         self.master_addr = client.master_addr
-        master_addr = self.client.addr_list[0]      
+        master_addr = self.client.addr_list[0]
+        self.term = term      
         self.previous_bottom_vec = np.zeros(0) 
         
 
@@ -49,7 +50,8 @@ class Slave(StrategyBase):
                 self.client.set_state('M', self.term)     
                 
                 data = {
-                    kv.TERM: self.term
+                    kv.TERM: self.term,
+                    kv.ADDR_LIST: new_addr
                 }
 
                 data = pickle.dumps(data)
@@ -59,7 +61,18 @@ class Slave(StrategyBase):
             else:
                 self.client.set_state('S', self.term)
                 self.term = data[kv.TERM]
+                self.client.addr_list = data[kv.ADDR_LIST]
 
+    def handle_restart_command(self, data):
+        # 处理从master收到的 remake 命令
+        print(f"Received 'restart' message.")
+        # data = {
+        #             kv.TYPE: kv.RESTART,
+        #             kv.TERM: self.term,
+        #             kv.ADDR_LIST: new_addr
+        #         }
+        self.term = data[kv.TERM] 
+        self.client.addr_list = data[kv.ADDR_LIST]
 
 #computing functions
     def handle_fillmatrix(self, data):
@@ -233,7 +246,7 @@ class Slave(StrategyBase):
             elif task['type'] == 'traceback':
                 self.handle_traceback(task)
             elif task['type'] == kv.RESTART:
-                self.handle_remake_command(task)
+                self.handle_restart_command(task)
                 
 
 
@@ -260,14 +273,7 @@ class Slave(StrategyBase):
 
        
     
-    def handle_remake_command(self, data):
-        # 处理从master收到的 remake 命令
-        print(f"Received 'remake' message.")
-        # data = {
-        #             kv.TYPE: kv.RESTART,
-        #             kv.TERM: kv.TERM
-        #         }
-        self.term = data[kv.TERM] 
+    
                
 
 
