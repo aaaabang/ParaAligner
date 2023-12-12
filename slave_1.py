@@ -10,7 +10,10 @@ def worker(addr):
     addr_list = [("127.0.0.1", 8000), ("127.0.0.1", 8001), ("127.0.0.1", 8002)]
     configs = { "key": "value", 
             'k': 2,   
+<<<<<<< HEAD
             # "database": "data/databases/test.txt",
+=======
+>>>>>>> efaa41704e2f5372aa69e694eb7fa242bedf45e8
             "database": "data/databases/covid1.txt",
             "patterns": [
                 # "data/patterns/medium.txt",
