@@ -25,23 +25,28 @@ def fs_close():
         shutil.rmtree(backup_dir)
 
 
+def _load_file_names_from(dir):
+    file_names = os.listdir(dir)
+    for f in file_names:
+        fpath = os.path.join(dir, f)
+        if os.path.getsize(fpath) == 0:
+            os.remove(fpath)
+    file_names = os.listdir(dir)
+    return file_names
+
+
 def fs_recover_info(config):
     # print(config)
-    backup_folder = config['backup_folder']
     db_size = os.path.getsize(config['database'])
     block_size = int(math.sqrt(db_size))
     # print(block_size)
     pattern_len = len(config['patterns'])
+    k = config['k']
 
-    file_names = os.listdir(backup_folder)
-    for f in file_names:
-        fpath = os.path.join(backup_folder, f)
-        if os.path.getsize(fpath) == 0:
-            os.remove(fpath)
-    file_names = os.listdir(backup_folder)
+    file_names = _load_file_names_from(backup_dir)
 
     state = [{
-        'topk': None, 'latest_col': []
+        'topk': None, 'latest_col': [], 'backtrace_done': False
     } for _ in range(pattern_len)]
 
     for file_name in file_names:
@@ -68,6 +73,19 @@ def fs_recover_info(config):
                 else:
                     break
             state[pattern]['latest_col'] = latest_col
+
+    output_files = _load_file_names_from(output_dir)
+    cnt = [[] for _ in range(pattern_len)]
+    for of in output_files:
+        of_pattern = int(of.split('_')[0])
+        cnt[of_pattern].append(of)
+
+    for p in range(pattern_len):
+        if len(cnt[p]) == k:
+            state[p]['backtrace_done'] = True
+        else:
+            for c in cnt[p]:
+                os.remove(os.path.join(output_dir, c))
     print(state)
     return state
 
