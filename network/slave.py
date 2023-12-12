@@ -4,7 +4,7 @@ import time
 import json
 import pickle
 import numpy as np
-
+from .constant import params
 from .base import StrategyBase
 from alg.alg import fill_matrix, trace_back
 from network.constant.params import SUBVEC_SIZE
@@ -60,7 +60,7 @@ class Slave(StrategyBase):
                     self.client.send(addr, data)
             else:
                 self.client.set_state('S', self.term)
-                self.term = data[kv.TERM]
+                self.term = self.term + 1
                 self.client.addr_list = data[kv.ADDR_LIST]
 
     def handle_restart_command(self, data):
@@ -106,13 +106,15 @@ class Slave(StrategyBase):
 
         N = len(sequence)
         M = len(pattern)    
+        
         # print(N, M) # test
         
         subvec_length = len(data['subvec'])
 
         # Conputing the first subvec, then get the number of subvecs
         if data['i_subvec'] == 0:
-            self.num_subvecs = int(M/(subvec_length - 1)) + 1
+            # self.num_subvecs = int(M/(subvec_length - 1)) + 1
+            self.num_subvecs = int(M/(params.SUBVEC_SIZE - 1)) + 1
         
         print(f"subvec_nums:{self.num_subvecs}" )
 

@@ -60,7 +60,7 @@ class Master(StrategyBase):
             if(pt['latest_col'] != None):
                 total_subvec = pt['last_col']
             else:
-                total_subvec = np.full(len(self.patterns_sizes), INT_MIN)
+                total_subvec = np.full(len(self.patterns_sizes) + 1, INT_MIN)
 
             total_subvec_number = 0
             should_subvec_number = int(get_str_length(patterns[i])/(params.SUBVEC_SIZE - 1)) + 1
