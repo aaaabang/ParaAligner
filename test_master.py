@@ -1,4 +1,4 @@
-from main import main
+from test_main import main
 
 
 def worker(addr):
@@ -10,8 +10,8 @@ def worker(addr):
                 # "data/patterns/medium.txt",
                 "data/patterns/test.txt"
             ]}
-    main(addr_list, addr, configs)
 
+    main(addr_list, addr, configs)
 
 
 worker(("127.0.0.1", 8000))
