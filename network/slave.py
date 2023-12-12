@@ -245,8 +245,7 @@ class Slave(StrategyBase):
                 self.handle_fillmatrix(task)
             elif task['type'] == 'traceback':
                 self.handle_traceback(task)
-            elif task['type'] == kv.RESTART:
-                self.handle_restart_command(task)
+           
                 
 
 
@@ -264,6 +263,11 @@ class Slave(StrategyBase):
             elif data == kv.CLOSE:  
                 print("Slave is closing.")
                 self.client.close()
+            elif data['term'] < self.term:
+                print("Slave received data from old Master")
+                return
+            elif data['type'] == kv.RESTART:
+                self.handle_restart_command(data)
             else:
                 self.job_queue.put(data)
                 print("Slave received data from Master")
