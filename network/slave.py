@@ -15,21 +15,15 @@ from .constant import key_value as kv
 
 
 class Slave(StrategyBase):
-    def __init__(self, client):
+    def __init__(self, client, term):
         super().__init__(client)
         self.job_queue = queue.Queue()
         self.client = client
         self.rank = client.rank # rank of this slave 
         self.last_heartbeat_time = time.time()
         self.master_addr = client.master_addr
-        master_addr = self.client.addr_list[0]
-        # with open('config.json', 'r') as f:
-        #     self.configs = json.load(f)
-        # print(f"configs: {self.client.configs} is initialized.")
-        # 停止任务的标志
-        self.master_timed_out = False
-        self.stop_current_task = False
-        self.previous_bottom_vec = np.zeros(0) #加了
+        master_addr = self.client.addr_list[0]      
+        self.previous_bottom_vec = np.zeros(0) 
         
 
     def send_heartbeat_response(self):
@@ -42,11 +36,29 @@ class Slave(StrategyBase):
 
     def check_if_master_alive(self, timeout=5):
         current_time = time.time()
-        if (current_time - self.last_heartbeat_time) > timeout and not self.master_timed_out:
-            # if the master timeout
+        if (current_time - self.last_heartbeat_time) > timeout:
             print('Master is considered as timed out.')
-            time.sleep(5)
-            # self.handle_master_timeout()
+            # rank 
+            if self.rank == 1:
+                #update addr_list
+                new_addr = [addr for addr in self.client.addr_list if  addr != self.master_addr]
+                self.client.addr_list = new_addr
+                # update term
+                self.term += 1
+                #restart Master
+                self.client.set_state('M', self.term)     
+                
+                data = {
+                    kv.TERM: self.term
+                }
+
+                data = pickle.dumps(data)
+
+                for addr in new_addr:
+                    self.client.send(addr, data)
+            else:
+                self.client.set_state('S', self.term)
+                self.term = data[kv.TERM]
 
 
 #computing functions
@@ -67,10 +79,9 @@ class Slave(StrategyBase):
         # print(f"Content: {content}")
 
        
-            # 从文件系统读对应的sequence, pattern
+        # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
         sequence = read_str(self.client.configs['database'], data['start_ind'], data['end_ind'])
-        # sequence = read_str("data/databases/test.txt", data['start_ind'], data['end_ind'])
         # print(f"sequence: {sequence}") # test
 
         pat_len = get_str_length(self.client.configs['patterns'][i_th_pattern])
@@ -86,11 +97,8 @@ class Slave(StrategyBase):
         
         subvec_length = len(data['subvec'])
 
-        # 计算第一个subvec的长度, 用于判断传给fillmatrix的pattern的长度
+        # Conputing the first subvec, then get the number of subvecs
         if data['i_subvec'] == 0:
-            # 计算一个 pattern 要划分成几个 subvec
-            # self.num_subvecs, remainder = divmod(M, subvec_length)
-            # self.num_subvecs += remainder > 0
             self.num_subvecs = int(M/(subvec_length - 1)) + 1
         
         print(f"subvec_nums:{self.num_subvecs}" )
@@ -128,7 +136,8 @@ class Slave(StrategyBase):
                 'i_subvec': data['i_subvec'],
                 'subvec': right_vec,
                 'topks': topK_dict,
-                'done': False
+                'done': False,
+                kv.TERM : self.term
             }
             
             # TEST
@@ -148,14 +157,13 @@ class Slave(StrategyBase):
                 'i_subvec': data['i_subvec'],
                 'subvec': right_vec,
                 'topks': topK_dict,
-                'done': True
+                'done': True,
+                kv.TERM : self.term
             }
             print("result test:" , response_data)
             self.send_fillmatirx(response_data)
 
      
-
-
     def send_fillmatirx(self, data):
         # 将结果发送回 Master
         data = pickle.dumps(data)
@@ -163,7 +171,6 @@ class Slave(StrategyBase):
 
         print(f"Slave {self.rank} sends fillmatrix result to {self.master_addr}")
         
-
     # trace_back(topK, start_s, end_s)
     def handle_traceback(self, data):
         # 从Master接收到的数据
@@ -182,16 +189,6 @@ class Slave(StrategyBase):
         pattern_path = self.client.configs['patterns'][i_th_pattern]
         # print(f"pattern: {pattern_path}") # test
         
-        # 执行 traceback 任务
-        # trace_back(topK, start_s, end_s)
-        # 参数：
-        # topK - 一个字典 {“value":value,"i_subvec":i_subvec,"xy":(x,y)} #键值待统一       注：y需要从子块坐标变成整块的坐标
-        # start_s - K值所在seq子块的起始索引
-        # end_s - K值所在seq子块的结束索引
-
-        # 返回：
-        # aligned_p_s - pattern的alignment结果
-        # aligned_s_s - seq的alignment结果
         topK = {
             "value": data['topk_value'],
             # "i_subvec": 0, # TODO
@@ -209,7 +206,8 @@ class Slave(StrategyBase):
             'topk_value': data['topk_value'],
             # 'start_ind': data['start_ind'],
             # 'end_ind': data['end_ind'],
-            'type': kv.T_TYPE
+            'type': kv.T_TYPE,
+            kv.TERM : self.term
         }
         print("tb_response_data:" , response_data)
         self.send_traceback(response_data)
@@ -223,13 +221,9 @@ class Slave(StrategyBase):
 
 
     def iter(self):
+
         self.check_if_master_alive(timeout=5)
-        # 处理任务队列中的任务
-        # if self.job_queue.empty():
-        #     print("Slave is waiting for data from Master.")
-        #     time.sleep(5)
-
-
+        # handle jobs in the queue
         while not self.job_queue.empty():
             task = self.job_queue.get()
                           
@@ -238,43 +232,10 @@ class Slave(StrategyBase):
                 self.handle_fillmatrix(task)
             elif task['type'] == 'traceback':
                 self.handle_traceback(task)
+            elif task['type'] == kv.RESTART:
+                self.handle_remake_command(task)
+                
 
-
-
-    # test
-        # self.test_handle_fillmatrix()
-        # self.test_handle_traceback()
-        # time.sleep(5)
-       
-        # pass
-
-    # test
-    def test_handle_fillmatrix(self):
-
-    # 创建一个 data 字典
-        data = {
-            "start_ind": 0,
-            "end_ind": 50,
-            "i_subvec": 0,
-            "subvec": [0,0,0],
-            "i_th_pattern": 0,
-        }
-
-        # 调用 handle_fillmatrix 方法
-        self.handle_fillmatrix(data)
-
-    def test_handle_traceback(self):
-        
-        # 创建一个 data 字典
-        data = {
-            'i_th_pattern' : 0,
-            'topk_pos' : (1,2),
-            'topk_value' : 6,
-            'start_ind' : 0,
-            'end_ind' : 10}
-
-        # 调用 handle_traceback 方法
-        self.handle_traceback(data)
 
     #从master接收数据
     def recv(self, addr, data):
@@ -297,50 +258,16 @@ class Slave(StrategyBase):
 
 
 
-    #Crush Handling
-#     def handle_master_timeout(self):
-#         self.master_timed_out = True
-#         print("Handling master timeout...")
-#         # 如果slave rank等于master rank+1, 则成为新的master
-#         master_rank = 0
-#         if self.rank == master_rank + 1: 
-#             # if Slave's rank is equal to Master's rank+1, then become the new Master
-#             self.become_new_master()    
-#         else:
-#             self.handle_remake_command()
-
-#         time.sleep(10)
-        
-#     def become_new_master(self):
-#     # 从磁盘重新启动并作为master
-#         print(f"Slave {self.rank} is becoming the new Master.")
-#        # 重置工作状态
-#         self.job_queue.queue.clear()
-#         self.stop_current_task = False
-#         # 设置为master
-#         self.client.close()
-#         self.client.reopen_socket()  # 重新打开socket
-#         self.client = Master(self.client)  # 创建一个新的Master对象
-#         print(f"Slave {self.rank} is becoming the new Master.")
-#         self.client.iter()  # 开始执行Master的任务
        
     
-#     def handle_remake_command(self):
-#         # 处理从master收到的 remake 命令
-#         print(f"Slave {self.rank} received 'remake' message. Preparing to reset and connect to the new Master.")
-        
-#         self.stop_current_task = True  # 设置停止当前任务的标志
-#         self.job_queue.queue.clear()  # 清空工作队列
-#         print("clear job queue")
-        
-#         self.connect_to_new_master()
-#         print("waiting for connecting to new master")
-        
-# #TODO
-#     def connect_to_new_master(self):
-#         # 重新连接到master, 设置为false
-#         self.master_timed_out = False
-#         master_addr = self.client.addr_list[1]
-#         print("Reset complete. Ready to connect to the new Master.")
+    def handle_remake_command(self, data):
+        # 处理从master收到的 remake 命令
+        print(f"Received 'remake' message.")
+        # data = {
+        #             kv.TYPE: kv.RESTART,
+        #             kv.TERM: kv.TERM
+        #         }
+        self.term = data[kv.TERM] 
+               
 
 
