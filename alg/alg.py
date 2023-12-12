@@ -7,14 +7,25 @@ import numpy as np
 import math
 
 #设置空位罚分和置换矩阵
-gap_penalty = -1
+gap_penalty = -5
 substi = "ACGTN"
-substi_matrix = [[1,-1,-1,-1,-1],
-                 [-1,1,-1,-1,-1],
-                 [-1,-1,1,-1,-1],
-                 [-1,-1,-1,1,-1],
-                 [-1,-1,-1,-1,1]]
-substi_matrix = [[3 * substi_matrix[i][j] for j in range(len(substi_matrix[i]))] for i in range(len(substi_matrix))]
+match = 3
+mismatch = -2
+substi_matrix = np.zeros((5,5),dtype = int)
+for i in range(5):
+    for j in range(5):
+        if i == j:
+            substi_matrix[i][j] = match
+        else:
+            substi_matrix[i][j] = mismatch
+
+
+# substi_matrix = [[1,-1,-1,-1,-1],
+#                  [-1,1,-1,-1,-1],
+#                  [-1,-1,1,-1,-1],
+#                  [-1,-1,-1,1,-1],
+#                  [-1,-1,-1,-1,1]]
+# substi_matrix = [[3 * substi_matrix[i][j] for j in range(len(substi_matrix[i]))] for i in range(len(substi_matrix))]
 
 #block读取的文件路径
 dir_block = "./"
