@@ -58,7 +58,7 @@ class Master(StrategyBase):
             self.patterns_sizes.append(get_str_length(patterns[i]))
             if(pt['latest_col'] != None):
                 total_subvec = files.load_block(i, pt['latest_col'])
-                if pt['latest_col'] == self.database_size - 1:#last column
+                if pt['backtrace_done'] == True:#last column
                     self.__init_traceback(i)
                     return
                 else:
@@ -66,7 +66,7 @@ class Master(StrategyBase):
                     end_ind = min(start_ind+self.block_size-1, self.database_size-1)
                     print(f"backup load {start_ind} to {end_ind}")
             else:
-                total_subvec = np.full(self.patterns_sizes[i] + 1, INT_MIN)
+                total_subvec = np.full(self.patterns_sizes[i] + 1, 0)
                 start_ind = 0
                 end_ind = self.block_size
                 # print(f"no backup{total_subvec} {self.patterns_sizes}")
@@ -156,10 +156,10 @@ class Master(StrategyBase):
                 data = pickle.dumps(data)
 
                 for addr in new_addr:
-                    self.client.send(addr, data)
+                    if(addr != self.client.addr):
+                        self.client.send(addr, data)
                 break # only one slave would crash
         
-
     def __send_job_to_slave(self):
         while(not self.receive_queue.empty()):
             job = self.receive_queue.get()
@@ -192,7 +192,7 @@ class Master(StrategyBase):
                         slave['idle'] = False
                         # update job_slave and slaves_states
                         self.job_slave[(i_th_pattern, start_ind, end_ind)] = slave['addr']
-                        slave[kv.SUBVEC] = numpy.zeros(self.patterns_sizes[i_th_pattern] + 1)
+                        slave[kv.SUBVEC] = np.full(self.patterns_sizes[i_th_pattern] + 1, INT_MIN)
                         # send to slave
                         data = pickle.dumps(job)
                         self.client.send(slave['addr'], data)
@@ -227,8 +227,7 @@ class Master(StrategyBase):
                         item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
                         print("item", item)
 
-
-              
+          
     '''
     1. Send Heatbeats
     2. Process subvectors received from one slave
@@ -264,7 +263,12 @@ class Master(StrategyBase):
                 return
     
     def __init_traceback(self, i_th_pattern):
-        i_topKs = self.topKs[i_th_pattern] # this is a [{}]
+        if len(self.topKs) == 0:
+            #traceback中途重启的
+            i_topKs = files.load_topK(i_th_pattern)
+            self.topKs[i_th_pattern] = i_topKs
+        else:
+            i_topKs = self.topKs[i_th_pattern] # this is a [{}]
         for topk in i_topKs:
             job_item = {
                 kv.TYPE: kv.T_TYPE,
@@ -332,14 +336,19 @@ class Master(StrategyBase):
                     # print("subvec_list, ", subvec_list)
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
+            print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
+
 
             if not (self.slaves_states[rank-1]['subvec'] == INT_MIN).any():
+                print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
+
                 # whole subvec, i.e rightmost column of a chunck, has been received
                 # ready to send to another slave for work
                 # print("self.slaves_states:", self.slaves_states)
                 files.save_block(self.slaves_states[rank-1]['subvec'], i_th_pattern, start_ind, end_ind)
-                files.save_topK(self.topKs, i_th_pattern)
+                files.save_topK(self.topKs[i_th_pattern], i_th_pattern)
                 self.__set_slave_idle(addr)
+                print("self.job_slave", self.job_slave)
                 del self.job_slave[(i_th_pattern, start_ind, end_ind)]
                 if end_ind >= self.database_size - 1:
                     # fill_matrix done!!!
@@ -354,7 +363,7 @@ class Master(StrategyBase):
             data[kv.END] = min(end_ind + self.block_size, self.database_size - 1)
             # job_item = {kv.Ith_PATTERN: i_th_pattern, kv.SUBVEC: subvec, 'start_ind': end_ind + 1, "end_ind": end_ind + self.block_size, 'i_subv': i_subv}
             self.receive_queue.put(data)
-            print("size queue", self.receive_queue.qsize())
+            # print("size queue", self.receive_queue.qsize())
             # queue_copy = self.receive_queue.queue.copy()
 
             # # 访问队列副本但不处理

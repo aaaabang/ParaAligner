@@ -7,8 +7,8 @@ def worker(addr):
                 'k': 2,   
                 "database": "data/databases/covid1.txt",
                 "patterns": [
-                    # "data/patterns/medium.txt",
-                    "data/patterns/test.txt"
+                    "data/patterns/test.txt",
+                    #"data/patterns/medium.txt"
                 ],
                 "backup_folder": "backup"
 
