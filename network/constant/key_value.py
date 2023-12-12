@@ -29,3 +29,4 @@ CLOSE = "close"
 #restart
 TERM = "term"
 RESTART = "restart"
+ADDR_LIST = "addr_list"
