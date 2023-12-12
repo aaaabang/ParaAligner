@@ -133,6 +133,7 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     # block_size = 4
     database_size = get_str_length(path_s)
     block_size = int(math.sqrt(database_size))
+    len_p = 0 #后面赋值
     continued = 1
 
     aligned_p_s = []
@@ -147,25 +148,33 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     while continued:
 
         #读取相应子sequece、左边界值、pattern
-        # print("start_s:",start_s)
-        # print("end_s:",end_s)
+        print("start_s:",start_s)
+        print("end_s:",end_s)
         seq_vec = read_str(path_s, start_s, end_s)
         i_subseq = int(start_s/block_size)
         # seq_vec = "TGTTACGG" #测试用
         # if n==1:seq_vec = "ACGG"
         # if n==2:seq_vec = "TGTT"
 
-        
-        left_vec = load_block(i_th_pattern, start_s - 1)
+        if start_s - 1 == 0: #如果是sequence最左边一块，left_vec全置0
+            if len_p == 0: #如果topK坐标在最左边一块，读取第二块的subvec长度
+                len_p = load_block(i_th_pattern,block_size)
+            else:
+                left_vec = np.zeros((len_p,),dtype = int)
+        else:
+            left_vec = load_block(i_th_pattern, start_s - 1)
+        print("left_vec:",left_vec)
+        print("len_p:",len_p)
         # left_vec = np.zeros((9,), dtype=int)  # 测试用
         # if n==1:left_vec = [0,0,4,9,7,5,3,4,2]
         # if n==2:left_vec = np.zeros((9,), dtype=int)
 
         pattern_vec = read_str(path_p, 0, len(left_vec) - 1)
+        len_p = len(pattern_vec)
         # pattern_vec = "GGTTGACTA" #测试用
 
         #初始化得分矩阵和回溯矩阵
-        len_r = len(pattern_vec)
+        len_r = len_p
         len_c = len(seq_vec)
         score_matrix = np.zeros((len_r + 1, len_c + 1), dtype=int)
         score_matrix[:, 0] = left_vec  # 第一列设为读取的左边界值
@@ -201,7 +210,9 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         aligned_s = ""
         i , j = x,y
         x_current = 0
-        while trace_matrix[i][j] != 0 and i >= 0 and j >= 0:
+        while trace_matrix[i][j] != 0 and i > 0 and j >= 0:
+            if j==0 and i_subseq==0: #如果是最左边一块
+                break
             x_current = i
             if trace_matrix[i][j] == 1:
                 aligned_p = pattern_vec[i] + aligned_p
