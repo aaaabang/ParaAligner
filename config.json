@@ -3,7 +3,7 @@
   "patterns": [
     "data/patterns/test_fna",
     "data/patterns/small.fna",
-    "data/patterns/medium.text"
+    "data/patterns/medium.txt"
   ],
   "backup_folder": "backup",
   "k": 3
