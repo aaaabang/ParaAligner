@@ -63,7 +63,7 @@ def fs_recover_info(config):
         else:
             latest_col = blocks[0]
             for i in range(1, len(blocks)):
-                if blocks[i] - blocks[i-1] == block_size:
+                if blocks[i] - blocks[i-1] <= block_size:
                     latest_col = blocks[i]
                 else:
                     break
