@@ -124,23 +124,21 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     database_size = get_str_length(path_s)
     block_size = int(math.sqrt(database_size))
     continued = 1
-    len_s = block_size
 
     aligned_p_s = []
     aligned_s_s = []
 
     x,y = topK["xy"]
-    # print(f"len_s:{len_s}")
-    # print(f"start_s:{start_s}")
-    i_subseq = int(start_s/len_s)
-    y -= i_subseq * block_size
-    # print(f"x:{x}")
-    # print(f"y:{y}")
+    # 转换为相对坐标
+    # y -= i_subseq * block_size
+    y -= start_s
+    
 
     while continued:
 
         #读取相应子sequece、左边界值、pattern
         seq_vec = read_str(path_s, start_s, end_s)
+        i_subseq = int(start_s/block_size)
         # seq_vec = "TGTTACGG" #测试用
         # if n==1:seq_vec = "ACGG"
         # if n==2:seq_vec = "TGTT"
@@ -212,17 +210,17 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         if trace_matrix[i][j] == 0:
             continued = 0
         elif trace_matrix[i][j] == 1:#diag
-            y = len_s - 1
+            y = block_size - 1
             x = x_current - 1
         elif trace_matrix[i][j] == 2:#up
             continued = 0 #?
         elif trace_matrix[i][j] == 3:#left
-            y = len_s - 1
+            y = block_size - 1
             x = x_current
 
         #更新seq索引
-        start_s = start_s - len_s
-        end_s = end_s - len_s
+        start_s = start_s - block_size
+        end_s = end_s - block_size
 
         aligned_p_s.append(aligned_p)
         aligned_s_s.append(aligned_s)
@@ -231,6 +229,9 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         # print(score_matrix.shape)
         # print(trace_matrix.shape)
         print("i_subseq",i_subseq)
+        print("start_s",start_s)
+        print("end_s",end_s)
+        print("seq",seq_vec)
         print(aligned_p)
         print(aligned_s)
 
