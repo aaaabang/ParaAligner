@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 import shutil
 import uuid
+import math
 
 
 backup_dir = './backup'
@@ -24,8 +25,50 @@ def fs_close():
         shutil.rmtree(backup_dir)
 
 
-def fs_recover_info():
-    pass
+def fs_recover_info(config):
+    print(config)
+    backup_folder = config['backup_folder']
+    db_size = os.path.getsize(config['database'])
+    block_size = int(math.sqrt(db_size))
+    print(block_size)
+    pattern_len = len(config['patterns'])
+
+    file_names = os.listdir(backup_folder)
+    for f in file_names:
+        fpath = os.path.join(backup_folder, f)
+        if os.path.getsize(fpath) == 0:
+            os.remove(fpath)
+    file_names = os.listdir(backup_folder)
+
+    state = [{
+        'topk': None, 'latest_col': []
+    } for _ in range(pattern_len)]
+
+    for file_name in file_names:
+        file_name = file_name.split('.')[0]
+        file_arr = file_name.split('_')
+        pattern = int(file_arr[1])
+        if file_arr[0] == 'col':
+            state[pattern]['latest_col'].append(int(file_arr[2]))
+        if file_arr[0] == 'topk':
+            state[pattern]['topk'] = load_topK(pattern)
+
+    for pattern in range(pattern_len):
+        blocks = state[pattern]['latest_col']
+        blocks.sort()
+        if len(blocks) == 0 or (len(blocks) == 1 and blocks[0] != min(block_size, db_size)):
+            state[pattern]['latest_col'] = None
+        elif len(blocks) == 1:
+            state[pattern]['latest_col'] = blocks[0]
+        else:
+            latest_col = blocks[0]
+            for i in range(1, len(blocks)):
+                if blocks[i] - blocks[i-1] == block_size:
+                    latest_col = blocks[i]
+                else:
+                    break
+            state[pattern]['latest_col'] = latest_col
+    print(state)
 
 
 def load_block(i_th_pattern, col_ind):
