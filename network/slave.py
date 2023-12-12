@@ -69,8 +69,8 @@ class Slave(StrategyBase):
        
             # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
-        # sequence = read_str(self.client.configs['database'], data['start_ind'], data['end_ind'])
-        sequence = read_str("data/databases/test.txt", data['start_ind'], data['end_ind'])
+        sequence = read_str(self.client.configs['database'], data['start_ind'], data['end_ind'])
+        # sequence = read_str("data/databases/test.txt", data['start_ind'], data['end_ind'])
         # print(f"sequence: {sequence}") # test
 
         pat_len = get_str_length(self.client.configs['patterns'][i_th_pattern])
