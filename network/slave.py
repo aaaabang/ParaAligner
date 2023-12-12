@@ -35,7 +35,7 @@ class Slave(StrategyBase):
         print(f"Slave {self.rank} responses Heartbeat to {self.master_addr}")
         
 
-    def check_if_master_alive(self, timeout=5):
+    def check_if_master_alive(self, timeout=20):
         current_time = time.time()
         if (current_time - self.last_heartbeat_time) > timeout:
             print('Master is considered as timed out.')
@@ -61,7 +61,8 @@ class Slave(StrategyBase):
             else:
                 self.client.set_state('S', self.term)
                 self.term = self.term + 1
-                self.client.addr_list = data[kv.ADDR_LIST]
+                new_addr = [addr for addr in self.client.addr_list if  addr != self.master_addr]
+                self.client.addr_list = new_addr
 
     def handle_restart_command(self, data):
         # 处理从master收到的 remake 命令
@@ -237,7 +238,7 @@ class Slave(StrategyBase):
 
     def iter(self):
 
-        self.check_if_master_alive(timeout=5)
+        self.check_if_master_alive()
         # handle jobs in the queue
         while not self.job_queue.empty():
             task = self.job_queue.get()

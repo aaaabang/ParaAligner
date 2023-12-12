@@ -225,7 +225,7 @@ class Master(StrategyBase):
     '''
     def iter(self):
         self.__send_heartbeat(interval=3)
-        self.__check_if_slave_alive(timeout=5)
+        self.__check_if_slave_alive(20)
         self.__send_job_to_slave()
         pass
 
