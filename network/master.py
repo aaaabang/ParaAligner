@@ -48,19 +48,26 @@ class Master(StrategyBase):
 
         self.term = term
         self.__init_jobs()
+        print(f"new master {self.client.addr} with term {self.term}")
         
     def __init_jobs(self):   
         patterns = self.client.configs[kv.PATTERN]
         self.total_aligns = len(patterns)*self.client.configs['k']
-        for i, pt in enumerate(patterns):
-            self.patterns_sizes.append(get_str_length(pt))
+
+        backup = files.fs_recover_info(self.client.configs)
+        for i, pt in backup:
+            self.patterns_sizes.append(get_str_length(patterns[i]))
+            if(backup['last_col'] != None):
+                total_subvec = backup['last_col']
+            else:
+                total_subvec = np.full(len(self.patterns_sizes), INI_MIN)
+
             total_subvec_number = 0
             should_subvec_number = int(get_str_length(pt)/(params.SUBVEC_SIZE - 1)) + 1
-            # print("should", should_subvec_number)
-            # print(f"{i} th pattern's size is {self.patterns_sizes[i]}")
             j = -1 # i_subvec
+            st_subvec = 0
+            end_subvec = 0
             while True:
-
                 current_subvec_size = (j+1)* (self.msg_size-1) + 1
                 remain_subvec_size = (self.patterns_sizes[i] + 1) - current_subvec_size + 1
                 # print("remain:", remain_subvec_size)
@@ -72,11 +79,14 @@ class Master(StrategyBase):
 
                     break
                 else:
-                    
+
                     size = min(remain_subvec_size, self.msg_size)
                     if size == 0:
                         break
-                    subvec = np.full(size, INT_MIN)
+
+                    end_subvec = st_subvec + size
+                    subvec = total_subvec[st_subvec, end_subvec]
+                    subvec += size - 1
                     # total_size += size
                     # print(f"size:{size} total {total_size}")
                     # print("total", total_subvec_number)
@@ -94,7 +104,6 @@ class Master(StrategyBase):
                     kv.TERM: self.term
                 }
                 self.receive_queue.put(job_item)
-                # print("job_item", job_item)
 
     def __send_heartbeat(self, interval=3):
 
@@ -115,6 +124,7 @@ class Master(StrategyBase):
             # slave timeout
             if((current_time - slave['update_time']) > timeout):
                 slave['alive'] = False
+                print(f"slave {slave['addr']} dies ")
                 #remove crashed 
 
                 #update addr_list
@@ -264,15 +274,16 @@ class Master(StrategyBase):
     def recv(self, addr, data):
 
         data = pickle.loads(data)
-        if (data[kv.TERM] < self.term):
-            print(f"received outdated data from {addr} in term {data[kv.TERM]}")
-            return
+        
 
         rank = self.client.addr_list.index(addr)
 
         if data == "Heartbeat Response":
             # update slave's state
             self.slaves_states[rank-1]['update_time'] = time.time()
+        elif (data[kv.TERM] < self.term):
+            print(f"received outdated data from {addr} in term {data[kv.TERM]}")
+            return
         elif data[kv.TYPE] == kv.F_TYPE:
             print(f"receive: {data} from {addr}")
 

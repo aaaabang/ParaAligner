@@ -15,7 +15,7 @@ from .constant import key_value as kv
 
 
 class Slave(StrategyBase):
-    def __init__(self, client):
+    def __init__(self, client, term):
         super().__init__(client)
         self.job_queue = queue.Queue()
         self.client = client
