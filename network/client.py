@@ -16,17 +16,15 @@ class Client(ClientBase):
         self.K = configs['k']#topK
         
         if self.rank == 0:
-            self.set_state('M')
+            self.set_state('M', 0)
         else:
-            self.set_state('S')
+            self.set_state('S', 0)
 
-    def set_state(self, state):
-        if self.state == state:
-            return
+    def set_state(self, state, term):
         if state == 'M':
-            self.strategy = Master(self)
+            self.strategy = Master(self, term)
         if state == 'S':
-            self.strategy = Slave(self)
+            self.strategy = Slave(self, term)
 
     def recv(self, addr, data):
         self.strategy.recv(addr, data)

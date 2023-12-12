@@ -24,7 +24,7 @@ def fs_close():
         shutil.rmtree(backup_dir)
 
 
-def fs_recover_info():
+def fs_recover_info(config):
     pass
 
 

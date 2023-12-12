@@ -25,3 +25,7 @@ PATTERN = "patterns"
 
 #close
 CLOSE = "close"
+
+#restart
+TERM = "term"
+RESTART = "restart"

@@ -21,8 +21,9 @@ INT_MIN = np.iinfo(np.int32).min // 2
 
 class Master(StrategyBase):
 
-    def __init__(self, client):
+    def __init__(self, client, term):
         super().__init__(client)
+        
         self.client = client
         self.slaves_states = [{'addr': addr, 'update_time': time.time(), 'alive': True, 'idle': True, 'subvec': None} for addr in self.client.addr_list if addr != client.addr]
         # map job to slave {(i_th_pattern, start_ind, end_ind): slave_addr}
@@ -45,6 +46,7 @@ class Master(StrategyBase):
         self.exist_aligns = 0
         self.total_aligns = 0
 
+        self.f
         self.__init_jobs()
         
     def __init_jobs(self):   
@@ -88,7 +90,8 @@ class Master(StrategyBase):
                     kv.I_SUBVEC: j, 
                     kv.Ith_PATTERN: i,
                     # kv.TYPE: kv.T_TYPE,
-                    kv.TYPE: kv.F_TYPE
+                    kv.TYPE: kv.F_TYPE,
+                    kv.TERM: params.TERM
                 }
                 self.receive_queue.put(job_item)
                 # print("job_item", job_item)
@@ -108,14 +111,33 @@ class Master(StrategyBase):
 
     def __check_if_slave_alive(self, timeout=5):
         current_time = time.time()
+        slavekey_to_remove = None
         for slave in self.slaves_states:
             # slave timeout
             if((current_time - slave['update_time']) > timeout):
                 slave['alive'] = False
-                # TODO 
-                '''
-                what to do if a slave time out
-                '''
+                #remove crashed 
+
+                #update addr_list
+                new_addr = [addr for addr in self.client.addr_list if  addr != slave['addr']]
+                self.client.addr_list = new_addr
+                #update term
+                params.TERM += 1
+
+                #restart Master
+                self.client.set_state('M', self.term)
+
+                #inform other slaves
+                data = {
+                    kv.TYPE: kv.RESTART,
+                    kv.TERM: params.TERM
+                }
+                data = pickle.dumps(data)
+
+                for addr in new_addr:
+                    self.client.send(addr, data)
+                break # only one slave would crash
+        
 
     def __send_job_to_slave(self):
         while(not self.receive_queue.empty()):
@@ -230,8 +252,8 @@ class Master(StrategyBase):
                 kv.TOPK_VALUE: topk["val"],
                 kv.START: topk[kv.START],
                 kv.END: topk[kv.END],
-                kv.DB_SIZE: self.database_size
-
+                kv.DB_SIZE: self.database_size,
+                kv.TERM: params.TERM
             }
             self.receive_queue.put(job_item)
     
@@ -240,8 +262,14 @@ class Master(StrategyBase):
     If a package is a heartbeat from slaves, update slave_table
     '''
     def recv(self, addr, data):
+
         data = pickle.loads(data)
+        if (data[kv.TERM] < params.TERM):
+            print(f"received outdated data from {addr} in term {data[kv.TERM]}")
+            return
+
         rank = self.client.addr_list.index(addr)
+
         if data == "Heartbeat Response":
             # update slave's state
             self.slaves_states[rank-1]['update_time'] = time.time()
@@ -311,7 +339,7 @@ class Master(StrategyBase):
             # while queue_copy:
             #     item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
             #     print("item", item)
-        else:
+        elif data[kv.TYPE] == kv.T_TYPE:
             print(f"receive: {data} from {addr}")
             # traceback phase
             alignment = data[kv.ALI]
