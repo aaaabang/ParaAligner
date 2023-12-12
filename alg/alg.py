@@ -48,7 +48,7 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
     len_p = len(pattern_vec)
     len_s = len(seq_vec)
     # i_seq = int(start_ind/len_s)
-    # print(f"len(pattern_vec):{len_p}")
+    # print(f"len_p:{len_p}")
     # print(f"len(left_vec):{len(left_vec)}")
     # print(f"len_s:{len_s}")
     # print(f"i_vec:{i_vec}")
@@ -136,6 +136,10 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     len_p = 0 #后面赋值
     continued = 1
 
+    print("slave_start_s:",start_s)
+    print("end_s:",end_s)
+    print("block_size:",block_size)
+
     aligned_p_s = []
     aligned_s_s = []
 
@@ -156,11 +160,10 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         # if n==1:seq_vec = "ACGG"
         # if n==2:seq_vec = "TGTT"
 
-        if start_s - 1 == 0: #如果是sequence最左边一块，left_vec全置0
+        if start_s == 0: #如果是sequence最左边一块，left_vec全置0
             if len_p == 0: #如果topK坐标在最左边一块，读取第二块的subvec长度
-                len_p = load_block(i_th_pattern,block_size)
-            else:
-                left_vec = np.zeros((len_p,),dtype = int)
+                len_p = len(load_block(i_th_pattern,block_size))
+            left_vec = np.zeros((len_p,),dtype = int)
         else:
             left_vec = load_block(i_th_pattern, start_s - 1)
         print("left_vec:",left_vec)
@@ -241,10 +244,10 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
             y = block_size - 1
             x = x_current
 
-        #更新seq索引
         if start_s < block_size and end_s < block_size:
             continued = 0
 
+        #左移一块，更新subseq索引
         start_s = start_s - block_size
         end_s = end_s - block_size
 
