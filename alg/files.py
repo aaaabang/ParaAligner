@@ -108,4 +108,7 @@ def save_output(i_th_pattern, align, topK_val, topK_id=None):
     if topK_id is None:
         topK_id = uuid.uuid4()
     with open(f"{output_dir}/{i_th_pattern}_{topK_id}.txt", 'a') as file:
-        file.writelines([str(topK_val), *align])
+        file.write(str(topK_val) + '\n')
+        file.write(align[0])
+        file.write('\n')
+        file.write(align[1])
