@@ -59,8 +59,10 @@ class Master(StrategyBase):
             self.patterns_sizes.append(get_str_length(patterns[i]))
             if(pt['latest_col'] != None):
                 total_subvec = pt['last_col']
+                # print(f"ha? {backup}")
             else:
-                total_subvec = np.full(len(self.patterns_sizes) + 1, INT_MIN)
+                total_subvec = np.full(self.patterns_sizes[i] + 1, INT_MIN)
+                # print(f"no backup{total_subvec} {self.patterns_sizes}")
 
             total_subvec_number = 0
             should_subvec_number = int(get_str_length(patterns[i])/(params.SUBVEC_SIZE - 1)) + 1
@@ -83,10 +85,12 @@ class Master(StrategyBase):
                     size = min(remain_subvec_size, self.msg_size)
                     if size == 0:
                         break
-
                     end_subvec = st_subvec + size
+                    # print(f"size:{size} st {st_subvec} end_sub {end_subvec}")
+                    # print(f"total_su{total_subvec}")
+
                     subvec = total_subvec[st_subvec:end_subvec]
-                    subvec += size - 1
+                    st_subvec += size - 1
                     # total_size += size
                     # print(f"size:{size} total {total_size}")
                     # print("total", total_subvec_number)
