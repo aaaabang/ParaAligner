@@ -70,7 +70,10 @@ class Master(StrategyBase):
 
                     break
                 else:
+                    
                     size = min(remain_subvec_size, self.msg_size)
+                    if size == 0:
+                        return
                     subvec = np.full(size, INT_MIN)
                     # total_size += size
                     # print(f"size:{size} total {total_size}")
