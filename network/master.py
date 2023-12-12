@@ -46,7 +46,7 @@ class Master(StrategyBase):
         self.exist_aligns = 0
         self.total_aligns = 0
 
-        self.f
+        self.term = term
         self.__init_jobs()
         
     def __init_jobs(self):   
@@ -91,7 +91,7 @@ class Master(StrategyBase):
                     kv.Ith_PATTERN: i,
                     # kv.TYPE: kv.T_TYPE,
                     kv.TYPE: kv.F_TYPE,
-                    kv.TERM: params.TERM
+                    kv.TERM: self.term
                 }
                 self.receive_queue.put(job_item)
                 # print("job_item", job_item)
@@ -111,7 +111,6 @@ class Master(StrategyBase):
 
     def __check_if_slave_alive(self, timeout=5):
         current_time = time.time()
-        slavekey_to_remove = None
         for slave in self.slaves_states:
             # slave timeout
             if((current_time - slave['update_time']) > timeout):
@@ -122,7 +121,7 @@ class Master(StrategyBase):
                 new_addr = [addr for addr in self.client.addr_list if  addr != slave['addr']]
                 self.client.addr_list = new_addr
                 #update term
-                params.TERM += 1
+                self.term += 1
 
                 #restart Master
                 self.client.set_state('M', self.term)
@@ -130,7 +129,8 @@ class Master(StrategyBase):
                 #inform other slaves
                 data = {
                     kv.TYPE: kv.RESTART,
-                    kv.TERM: params.TERM
+                    kv.TERM: self.term,
+                    kv.ADDR_LIST: new_addr
                 }
                 data = pickle.dumps(data)
 
@@ -253,7 +253,7 @@ class Master(StrategyBase):
                 kv.START: topk[kv.START],
                 kv.END: topk[kv.END],
                 kv.DB_SIZE: self.database_size,
-                kv.TERM: params.TERM
+                kv.TERM: self.term
             }
             self.receive_queue.put(job_item)
     
@@ -264,7 +264,7 @@ class Master(StrategyBase):
     def recv(self, addr, data):
 
         data = pickle.loads(data)
-        if (data[kv.TERM] < params.TERM):
+        if (data[kv.TERM] < self.term):
             print(f"received outdated data from {addr} in term {data[kv.TERM]}")
             return
 
