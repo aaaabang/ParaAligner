@@ -26,11 +26,11 @@ def fs_close():
 
 
 def fs_recover_info(config):
-    print(config)
+    # print(config)
     backup_folder = config['backup_folder']
     db_size = os.path.getsize(config['database'])
     block_size = int(math.sqrt(db_size))
-    print(block_size)
+    # print(block_size)
     pattern_len = len(config['patterns'])
 
     file_names = os.listdir(backup_folder)

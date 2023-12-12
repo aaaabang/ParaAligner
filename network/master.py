@@ -54,14 +54,21 @@ class Master(StrategyBase):
         patterns = self.client.configs[kv.PATTERN]
         self.total_aligns = len(patterns)*self.client.configs['k']
         backup = files.fs_recover_info(self.client.configs)
-        print(backup)
         for i, pt in enumerate(backup):
             self.patterns_sizes.append(get_str_length(patterns[i]))
             if(pt['latest_col'] != None):
-                total_subvec = pt['last_col']
-                # print(f"ha? {backup}")
+                total_subvec = files.load_block(i, pt['latest_col'])
+                if pt['latest_col'] == self.database_size - 1:#last column
+                    self.__init_traceback(i)
+                    return
+                else:
+                    start_ind = pt['latest_col'] + 1
+                    end_ind = min(start_ind+self.block_size-1, self.database_size-1)
+                    print(f"backup load {start_ind} to {end_ind}")
             else:
                 total_subvec = np.full(self.patterns_sizes[i] + 1, INT_MIN)
+                start_ind = 0
+                end_ind = self.block_size
                 # print(f"no backup{total_subvec} {self.patterns_sizes}")
 
             total_subvec_number = 0
@@ -99,8 +106,8 @@ class Master(StrategyBase):
 
                 job_item = {
                     kv.SUBVEC: subvec, 
-                    kv.START: 0, 
-                    kv.END: self.block_size, 
+                    kv.START: start_ind, 
+                    kv.END: end_ind, 
                     kv.I_SUBVEC: j, 
                     kv.Ith_PATTERN: i,
                     # kv.TYPE: kv.T_TYPE,
@@ -289,7 +296,7 @@ class Master(StrategyBase):
             print(f"received outdated data from {addr} in term {data[kv.TERM]}")
             return
         elif data[kv.TYPE] == kv.F_TYPE:
-            print(f"receive: {data} from {addr}")
+            print(f"[receive fillmatrix] {data} from {addr}")
 
             # fillmatrix phase
             # i_subv = data['i_subvec'] # index of the received parts of rightmost column
@@ -355,7 +362,7 @@ class Master(StrategyBase):
             #     item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
             #     print("item", item)
         elif data[kv.TYPE] == kv.T_TYPE:
-            print(f"receive: {data} from {addr}")
+            print(f"[receive traceback]: {data} from {addr}")
             # traceback phase
             alignment = data[kv.ALI]
             i_th_pattern = data[kv.Ith_PATTERN]
