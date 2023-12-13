@@ -9,4 +9,8 @@ def main(addr_list, addr, configs):
 
     client = Client(addr_list, addr, configs)
     while not client.closed():
-        client.strategy.iter()
+        try:
+            client.strategy.iter()
+        except Exception as e:
+            print(e.with_traceback())
+            client._closed = True

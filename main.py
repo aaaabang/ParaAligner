@@ -54,7 +54,11 @@ def main(addr_list, addr, configs):
 
     client = Client(addr_list, addr, configs)
     while not client.closed():
-        client.strategy.iter()
+        try:
+            client.strategy.iter()
+        except Exception as e:
+            print(e.with_traceback())
+            client._closed = True
 
 if node_id == 0 and task_id == 0:
     addrs = server(ntasks - 1) # ignore self

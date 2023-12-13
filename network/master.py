@@ -58,7 +58,7 @@ class Master(StrategyBase):
             self.patterns_sizes.append(get_str_length(patterns[i]))
             if(pt['latest_col'] != None):
                 total_subvec = files.load_block(i, pt['latest_col'])
-                if pt['backtrace_done'] == True:#last column
+                if pt['latest_col'] == self.database_size-1:#last column
                     self.__init_traceback(i)
                     return
                 else:
