@@ -7,10 +7,10 @@ import numpy as np
 import math
 
 #设置空位罚分和置换矩阵
-gap_penalty = -5
 substi = "ACGTN"
+gap_penalty = -2
 match = 3
-mismatch = -2
+mismatch = -3
 substi_matrix = np.zeros((5,5),dtype = int)
 for i in range(5):
     for j in range(5):
@@ -45,6 +45,7 @@ dir_block = "./"
     topK_list: 前topK个最大值及其坐标(value,(x,y))的有序列表（降序），如果第K个值有重复，列表长度可能大于K
 """
 def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
+    left_vec = np.array(left_vec)
     len_p = len(pattern_vec)
     len_s = len(seq_vec)
     # i_seq = int(start_ind/len_s)
@@ -77,7 +78,7 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
                                       score_matrix[i][j-1] + gap_penalty
             ])
     right_vec = score_matrix[:,len_c]
-    bottom_vec = score_matrix[len_r-1, 1:]
+    bottom_vec = score_matrix[len_r, 1:]
 
     # 返回所有大于等于第topk个值的[值,坐标](可能多于k个)
     topK_list = []
@@ -106,6 +107,11 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
                 topK_list.append((Kth_value, (x_abs,y_abs)))
 
     # print(score_matrix) #测试用
+    # print(f"left_vec:{left_vec}")
+    # print(f"right_vec:{right_vec}")
+    # print(f"shape left_vec:{left_vec.shape}")
+    # print(f"shape right_vec:{right_vec.shape}")
+
     # print(right_vec)
     # print(bottom_vec)
     # print(topK_list)
@@ -133,49 +139,43 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     # block_size = 4
     database_size = get_str_length(path_s)
     block_size = int(math.sqrt(database_size))
+    i_subseq = int(start_s/block_size)
     len_p = 0 #后面赋值
     continued = 1
 
-    print("slave_start_s:",start_s)
-    print("end_s:",end_s)
-    print("block_size:",block_size)
+    # print("slave_start_s:",start_s)
+    # print("end_s:",end_s)
+    # print("topk_xy:",topK["xy"])
+    # print("block_size:",block_size)
 
     aligned_p_s = []
     aligned_s_s = []
 
     x,y = topK["xy"]
     # 转换为相对坐标
-    # y -= i_subseq * block_size
     y -= start_s
     
 
     while continued:
 
         #读取相应子sequece、左边界值、pattern
-        print("start_s:",start_s)
-        print("end_s:",end_s)
+        # print("start_s:",start_s)
+        # print("end_s:",end_s)
         seq_vec = read_str(path_s, start_s, end_s)
-        i_subseq = int(start_s/block_size)
-        # seq_vec = "TGTTACGG" #测试用
-        # if n==1:seq_vec = "ACGG"
-        # if n==2:seq_vec = "TGTT"
 
         if start_s == 0: #如果是sequence最左边一块，left_vec全置0
             if len_p == 0: #如果topK坐标在最左边一块，读取第二块的subvec长度
-                len_p = len(load_block(i_th_pattern,block_size))
-            left_vec = np.zeros((len_p,),dtype = int)
+                len_p = len(load_block(i_th_pattern,block_size-1))
+            left_vec = np.zeros((len_p+1,),dtype = int)
         else:
             left_vec = load_block(i_th_pattern, start_s - 1)
-        print("left_vec:",left_vec)
-        print("len_p:",len_p)
-        # left_vec = np.zeros((9,), dtype=int)  # 测试用
-        # if n==1:left_vec = [0,0,4,9,7,5,3,4,2]
-        # if n==2:left_vec = np.zeros((9,), dtype=int)
+        # print("block_size:",block_size)
+        # print("left_vec:",left_vec)
+        # print("len_p:",len_p)
 
         pattern_vec = read_str(path_p, 0, len(left_vec) - 1)
         len_p = len(pattern_vec)
-        # pattern_vec = "GGTTGACTA" #测试用
-
+        
         #初始化得分矩阵和回溯矩阵
         len_r = len_p
         len_c = len(seq_vec)
@@ -186,11 +186,6 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         #重新计算得分矩阵,并记录回溯矩阵
         for i in range(1,len_r+1):
             for j in range(1,len_c+1):
-                # print(f"len(pattern_vec):{len(pattern_vec)}")
-                # print(f"len(left_vec):{len(left_vec)}")
-                # print(f"len_s:{len_s}")
-                # print(f"(i-1,j-1):{(i-1,j-1)}")
-                # print(f"pattern_vec[i-1]:{pattern_vec[i-1]}")
                 a = substi.index(seq_vec[j-1])
                 b = substi.index(pattern_vec[i-1])
                 similarity = substi_matrix[a][b]
@@ -199,25 +194,44 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
                 left = score_matrix[i][j-1] + gap_penalty
                 score = max(0, diag, up, left)
                 score_matrix[i][j] = score
+                # print("score:",score)
+                # print("diag:",diag)
+                # print("up:",up)
+                # print("left:",left)
                 if score == 0:
                     trace_matrix[i-1][j-1] = 0
-                elif score == diag:
-                    trace_matrix[i-1][j-1] = 1
-                elif score == up:
-                    trace_matrix[i-1][j-1] = 2
                 elif score == left:
                     trace_matrix[i-1][j-1] = 3
+                elif score == up:
+                    trace_matrix[i-1][j-1] = 2
+                elif score == diag:
+                    trace_matrix[i-1][j-1] = 1             
+                # print("seq_vec[j-1]:",seq_vec[j-1])
+                # print("pattern_vec[i-1]:",pattern_vec[i-1])
+                # print("trace_matrix[i-1][j-1]:",trace_matrix[i-1][j-1])
+        # print(score_matrix)
+        # print(trace_matrix)
+        # print(pattern_vec)
+        # print(seq_vec)
 
         # 回溯
         aligned_p = ""
         aligned_s = ""
+        #将seq坐标转换为trace
         i , j = x,y
-        x_current = 0
+        # print("(x,y)",(x,y))
+        # print("trace.shape",trace_matrix.shape)
+        x_current = x
         while trace_matrix[i][j] != 0 and i > 0 and j >= 0:
-            if j==0 and i_subseq==0: #如果是最左边一块
+            # print("(i,j):",(i,j))
+            # print("trace_matrix[i][j]:", trace_matrix[i][j])
+            if j==0 and i_subseq==0: #如果是最左边一块且j=0
+                # print("end bc j reach boundary")
                 break
-            x_current = i
             if trace_matrix[i][j] == 1:
+                # print(" trace_matrix[i][j]", trace_matrix[i][j])
+                # print("seq_vec[j]",seq_vec[j])
+                # print("pattern_vec[i]",pattern_vec[i])
                 aligned_p = pattern_vec[i] + aligned_p
                 aligned_s = seq_vec[j] + aligned_s
                 i -= 1
@@ -230,39 +244,51 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
                 aligned_p = "-" + aligned_p
                 aligned_s = seq_vec[j] + aligned_s
                 j -= 1
-            
+            x_current = i
+            # print("aligned_p:",aligned_p)
+            # print("aligned_s:",aligned_s)
+
+        #重新计算块长
+        if start_s == block_size+1: #master 0-blocksize
+            block_size +=1
+
+        # if start_s < block_size and end_s <= block_size:
+        #     print("end bc already tracing all subseq")
+        #     continued = 0
+
+        #左移一块，更新索引
+        start_s = start_s - block_size 
+        end_s = start_s + block_size - 1
+        i_subseq = int(start_s/block_size)
+
+        if start_s < 0:
+            # print("end bc already tracing all subseq")
+            continued = 0
 
         # 结束循环，否则更新回溯起始点坐标
         if trace_matrix[i][j] == 0:
+            # print("end bc trace_matrix[i][j] == 0")
             continued = 0
         elif trace_matrix[i][j] == 1:#diag
             y = block_size - 1
             x = x_current - 1
         elif trace_matrix[i][j] == 2:#up
+            # print("end bc i reach boundary")
             continued = 0 #?
         elif trace_matrix[i][j] == 3:#left
             y = block_size - 1
             x = x_current
-
-        if start_s < block_size and end_s < block_size:
-            continued = 0
-
-        #左移一块，更新subseq索引
-        start_s = start_s - block_size
-        end_s = end_s - block_size
+        # print("相对坐标(x,y):",(x,y))
 
         aligned_p_s.append(aligned_p)
         aligned_s_s.append(aligned_s)
 
         # n += 1  # 测试用
-        # print(score_matrix.shape)
-        # print(trace_matrix.shape)
-        # print("i_subseq",i_subseq)
-        # print("start_s",start_s)
-        # print("end_s",end_s)
-        # print("seq",seq_vec)
-        print(aligned_p)
-        print(aligned_s)
+        # print("next_start_s",start_s)
+        # print("next_end_s",end_s)
+
+        # print(aligned_p)
+        # print(aligned_s)
 
     # 拼接alignment
     aligned_p_all = ""
@@ -271,7 +297,7 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
     for i in range(len_align):
         aligned_p_all += aligned_p_s[len_align - i - 1]
         aligned_s_all += aligned_s_s[len_align - i - 1]
-   
+    # print("end traceback")
     # print(aligned_p_all)
     # print(aligned_s_all)
 
