@@ -57,7 +57,7 @@ def main(addr_list, addr, configs):
         try:
             client.strategy.iter()
         except Exception as e:
-            print(e.with_traceback())
+            # print(e.with_traceback())
             client._closed = True
 
 if node_id == 0 and task_id == 0:

@@ -105,6 +105,17 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
                 # y_abs = i_seq * len_s + y
                 y_abs = start_ind+y
                 topK_list.append((Kth_value, (x_abs,y_abs)))
+    
+    # for i in range(score_matrix.shape[0]):
+    #         for j in range(score_matrix.shape[1]):
+    #             if score_matrix[i][j] == 68:
+    #                 print("yes")
+    #                 print((i,j))
+    #                 print(start_ind)
+    #                 print(topK_list)
+    #                 exit()
+    #             else:
+    #                 print("no")
 
     # print(score_matrix) #测试用
     # print(f"left_vec:{left_vec}")
@@ -114,7 +125,7 @@ def fill_matrix(left_vec, up_vec, i_vec, seq_vec, pattern_vec, K, start_ind):
 
     # print(right_vec)
     # print(bottom_vec)
-    # print(topK_list)
+    print(topK_list)
     # print(topK_list)
 
     return right_vec, bottom_vec, topK_list
@@ -200,18 +211,19 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
                 # print("left:",left)
                 if score == 0:
                     trace_matrix[i-1][j-1] = 0
+                elif score == diag:
+                    trace_matrix[i-1][j-1] = 1 
                 elif score == left:
                     trace_matrix[i-1][j-1] = 3
                 elif score == up:
-                    trace_matrix[i-1][j-1] = 2
-                elif score == diag:
-                    trace_matrix[i-1][j-1] = 1             
+                    trace_matrix[i-1][j-1] = 2            
                 # print("seq_vec[j-1]:",seq_vec[j-1])
                 # print("pattern_vec[i-1]:",pattern_vec[i-1])
                 # print("trace_matrix[i-1][j-1]:",trace_matrix[i-1][j-1])
-        # print(score_matrix)
-        # print(trace_matrix)
-        # print(pattern_vec)
+        
+        # print(score_matrix[:12,:])
+        # print(trace_matrix[:11,:])
+        
         # print(seq_vec)
 
         # 回溯
@@ -222,16 +234,25 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         # print("(x,y)",(x,y))
         # print("trace.shape",trace_matrix.shape)
         x_current = x
-        while trace_matrix[i][j] != 0 and i > 0 and j >= 0:
+        y_current = y
+        while trace_matrix[i][j] != 0 and i >= 0 and j >= 0:
+            # print("i_subseq",i_subseq)
             # print("(i,j):",(i,j))
             # print("trace_matrix[i][j]:", trace_matrix[i][j])
+            # print("seq_vec[j]",seq_vec[j])
+            # print("pattern_vec[i]",pattern_vec[i])
+            # print("seq_vec",seq_vec)
+            # print("pattern_vec",pattern_vec)
+            x_current = i
+            y_current = j
+    
             if j==0 and i_subseq==0: #如果是最左边一块且j=0
-                # print("end bc j reach boundary")
-                break
+                print("end bc j reach boundary")
+                continued = 0
+            if i==0 and trace_matrix[i][j] == 2: #如果是最左边一块且j=0
+                print("end bc i reach boundary")
+                continued = 0
             if trace_matrix[i][j] == 1:
-                # print(" trace_matrix[i][j]", trace_matrix[i][j])
-                # print("seq_vec[j]",seq_vec[j])
-                # print("pattern_vec[i]",pattern_vec[i])
                 aligned_p = pattern_vec[i] + aligned_p
                 aligned_s = seq_vec[j] + aligned_s
                 i -= 1
@@ -244,13 +265,12 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
                 aligned_p = "-" + aligned_p
                 aligned_s = seq_vec[j] + aligned_s
                 j -= 1
-            x_current = i
             # print("aligned_p:",aligned_p)
             # print("aligned_s:",aligned_s)
 
-        #重新计算块长
-        if start_s == block_size+1: #master 0-blocksize
-            block_size +=1
+        # #重新计算块长
+        # if start_s == block_size+1: #master 0-blocksize
+        #     block_size +=1
 
         # if start_s < block_size and end_s <= block_size:
         #     print("end bc already tracing all subseq")
@@ -262,22 +282,38 @@ def trace_back(topK, start_s, end_s, path_s, path_p, i_th_pattern):
         i_subseq = int(start_s/block_size)
 
         if start_s < 0:
-            # print("end bc already tracing all subseq")
+            print("end bc already tracing all subseq")
             continued = 0
 
         # 结束循环，否则更新回溯起始点坐标
-        if trace_matrix[i][j] == 0:
+        if trace_matrix[x_current][y_current] == 0:
             # print("end bc trace_matrix[i][j] == 0")
             continued = 0
-        elif trace_matrix[i][j] == 1:#diag
+        elif trace_matrix[x_current][y_current] == 1:#diag
             y = block_size - 1
             x = x_current - 1
-        elif trace_matrix[i][j] == 2:#up
+        elif trace_matrix[x_current][y_current] == 2:#up
+            y = y_current
+            x = x_current - 1
             # print("end bc i reach boundary")
-            continued = 0 #?
-        elif trace_matrix[i][j] == 3:#left
+            # continued = 0 #?
+        elif trace_matrix[x_current][y_current] == 3:#left
             y = block_size - 1
             x = x_current
+        # if trace_matrix[i][j] == 0:
+        #     # print("end bc trace_matrix[i][j] == 0")
+        #     continued = 0
+        # elif trace_matrix[i][j] == 1:#diag
+        #     y = block_size - 1
+        #     x = x_current - 1
+        # elif trace_matrix[i][j] == 2:#up
+        #     y = y_current
+        #     x = x_current - 1
+        #     # print("end bc i reach boundary")
+        #     # continued = 0 #?
+        # elif trace_matrix[i][j] == 3:#left
+        #     y = block_size - 1
+        #     x = x_current
         # print("相对坐标(x,y):",(x,y))
 
         aligned_p_s.append(aligned_p)
