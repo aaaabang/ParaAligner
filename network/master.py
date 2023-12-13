@@ -199,7 +199,7 @@ class Master(StrategyBase):
                         # see if job is sent successfully, if not, put it back into queue
                         sent_flag = 1
                         
-                        # print(f"[send fillmartix] new job {job} to Slave{slave['addr']}")
+                        print(f"[send fillmartix] new job {job} to Slave{slave['addr']}")
                         break
 
                 if sent_flag == 0:
@@ -257,8 +257,8 @@ class Master(StrategyBase):
             i_topKs = sorted_i_topKs
 
         self.topKs[i_th_pattern] = i_topKs
-        if start_ind == 6364:
-            print(self.topKs)
+
+        # print(self.topKs)
 
         
 
@@ -325,8 +325,7 @@ class Master(StrategyBase):
             end_ind = data[kv.END]
             done = data[kv.Done]
 
-            if(start_ind == 6364):
-                print(f"[receive fillmatrix] {data} from {addr}")
+            print(f"[receive fillmatrix] {data} from {addr}")
 
             for i in range(len(subvec)):
                 # Assuming self.slaves_states[rank-1]['subvec'] is a list
@@ -348,7 +347,7 @@ class Master(StrategyBase):
 
 
             if not (self.slaves_states[rank-1]['subvec'] == INT_MIN).any():
-                # print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
+                #print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
 
                 # whole subvec, i.e rightmost column of a chunck, has been received
                 # ready to send to another slave for work
