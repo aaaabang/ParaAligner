@@ -68,7 +68,7 @@ class Master(StrategyBase):
             else:
                 total_subvec = np.full(self.patterns_sizes[i] + 1, 0)
                 start_ind = 0
-                end_ind = self.block_size
+                end_ind = self.block_size-1
                 # print(f"no backup{total_subvec} {self.patterns_sizes}")
 
             total_subvec_number = 0
