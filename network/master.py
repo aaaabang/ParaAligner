@@ -199,7 +199,7 @@ class Master(StrategyBase):
                         # see if job is sent successfully, if not, put it back into queue
                         sent_flag = 1
                         
-                        print(f"[send fillmartix] new job {job} to Slave{slave['addr']}")
+                        # print(f"[send fillmartix] new job {job} to Slave{slave['addr']}")
                         break
 
                 if sent_flag == 0:
@@ -214,7 +214,7 @@ class Master(StrategyBase):
                         slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
                         data = pickle.dumps(job)
                         self.client.send(slave, data)
-                        print(f"send new job {job} to Slave{slave}")
+                        # print(f"send new job {job} to Slave{slave}")
                     else:
                         self.receive_queue.put(job)
                 except Exception as e:
@@ -254,7 +254,14 @@ class Master(StrategyBase):
             
             # 按照 "val" 键进行排序
             sorted_i_topKs = sorted(i_topKs, key=lambda x: x["val"])
-            self.topKs[i_th_pattern] = sorted_i_topKs
+            i_topKs = sorted_i_topKs
+
+        self.topKs[i_th_pattern] = i_topKs
+        if start_ind == 6364:
+            print(self.topKs)
+
+        
+
 
     def __set_slave_idle(self, slave_addr):
         for slave in self.slaves_states:
@@ -300,7 +307,6 @@ class Master(StrategyBase):
             print(f"received outdated data from {addr} in term {data[kv.TERM]}")
             return
         elif data[kv.TYPE] == kv.F_TYPE:
-            print(f"[receive fillmatrix] {data} from {addr}")
 
             # fillmatrix phase
             # i_subv = data['i_subvec'] # index of the received parts of rightmost column
@@ -319,6 +325,8 @@ class Master(StrategyBase):
             end_ind = data[kv.END]
             done = data[kv.Done]
 
+            if(start_ind == 6364):
+                print(f"[receive fillmatrix] {data} from {addr}")
 
             for i in range(len(subvec)):
                 # Assuming self.slaves_states[rank-1]['subvec'] is a list
@@ -336,11 +344,11 @@ class Master(StrategyBase):
                     # print("subvec_list, ", subvec_list)
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
-            print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
+            # print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
 
 
             if not (self.slaves_states[rank-1]['subvec'] == INT_MIN).any():
-                print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
+                # print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
 
                 # whole subvec, i.e rightmost column of a chunck, has been received
                 # ready to send to another slave for work
@@ -348,7 +356,7 @@ class Master(StrategyBase):
                 files.save_block(self.slaves_states[rank-1]['subvec'], i_th_pattern, start_ind, end_ind)
                 files.save_topK(self.topKs[i_th_pattern], i_th_pattern)
                 self.__set_slave_idle(addr)
-                print("self.job_slave", self.job_slave)
+                # print("self.job_slave", self.job_slave)
                 del self.job_slave[(i_th_pattern, start_ind, end_ind)]
                 if end_ind >= self.database_size - 1:
                     # fill_matrix done!!!
