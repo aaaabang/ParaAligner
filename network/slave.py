@@ -22,7 +22,8 @@ class Slave(StrategyBase):
         self.rank = client.rank # rank of this slave 
         self.last_heartbeat_time = time.time()
         self.master_addr = client.master_addr
-        master_addr = self.client.addr_list[0]
+        # master_addr = self.client.addr_list[0]
+        self.master_addr = self.client.addr_list[0]
         self.term = term      
         self.previous_bottom_vec = np.zeros(0) 
         
@@ -39,6 +40,7 @@ class Slave(StrategyBase):
         current_time = time.time()
         if (current_time - self.last_heartbeat_time) > timeout:
             print('Master is considered as timed out.')
+            time.sleep(3)
             # rank 
             if self.rank == 1:
                 #update addr_list
@@ -51,18 +53,22 @@ class Slave(StrategyBase):
                 
                 data = {
                     kv.TERM: self.term,
-                    kv.ADDR_LIST: new_addr
-                }
+                    kv.ADDR_LIST: new_addr,
+                    kv.TYPE: kv.RESTART
+                        }
+                
 
                 data = pickle.dumps(data)
 
-                for addr in new_addr:
+                for addr in new_addr[1:]:
                     self.client.send(addr, data)
-            else:
-                self.client.set_state('S', self.term)
-                self.term = self.term + 1
-                new_addr = [addr for addr in self.client.addr_list if  addr != self.master_addr]
-                self.client.addr_list = new_addr
+                    print(f"restart message {data} have been sent to {addr}")
+            # else:
+            #     self.client.set_state('S', self.term)
+            #     self.term = self.term + 1
+            #     new_addr = [addr for addr in self.client.addr_list if  addr != self.master_addr]
+            #     self.master_addr = new_addr[0]
+            #     self.client.addr_list = new_addr
 
     def handle_restart_command(self, data):
         # 处理从master收到的 remake 命令
@@ -72,8 +78,13 @@ class Slave(StrategyBase):
         #             kv.TERM: self.term,
         #             kv.ADDR_LIST: new_addr
         #         }
+        self.client.set_state('S', self.term)
         self.term = data[kv.TERM] 
         self.client.addr_list = data[kv.ADDR_LIST]
+        self.master_addr = self.client.addr_list[0]
+        print(f"New master_addr: {self.master_addr}")
+        print(f"New term: {self.term}")
+        print(f"New addr_list: {self.client.addr_list}")
 
 #computing functions
     def handle_fillmatrix(self, data):
@@ -242,12 +253,14 @@ class Slave(StrategyBase):
         # handle jobs in the queue
         while not self.job_queue.empty():
             task = self.job_queue.get()
-                          
-            if task['type'] == 'fillmatrix':
-                print("job type is fillmatrix")
-                self.handle_fillmatrix(task)
-            elif task['type'] == 'traceback':
-                self.handle_traceback(task)
+            if task[kv.TERM] < self.term:
+                return         
+            else:    
+                if task['type'] == 'fillmatrix':
+                    print("job type is fillmatrix")
+                    self.handle_fillmatrix(task)
+                elif task['type'] == 'traceback':
+                    self.handle_traceback(task)
            
                 
 
@@ -269,9 +282,9 @@ class Slave(StrategyBase):
             elif data['term'] < self.term:
                 print("Slave received data from old Master")
                 return
-            elif data['type'] == kv.RESTART:
+            elif 'type' in data and data['type'] == kv.RESTART:
                 self.handle_restart_command(data)
-            else:
+            elif 'type' in data:
                 self.job_queue.put(data)
                 print("Slave received data from Master")
                 print("Current job_queue contents:", list(self.job_queue.queue))
