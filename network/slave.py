@@ -11,6 +11,7 @@ from network.constant.params import SUBVEC_SIZE
 # from alg.test_alg import fill_matrix, trace_back
 from alg.seq import read_str, get_str_length
 from .constant import key_value as kv
+import heapq
 # from .master import Master
 
 
@@ -26,6 +27,8 @@ class Slave(StrategyBase):
         self.master_addr = self.client.addr_list[0]
         self.term = term      
         self.previous_bottom_vec = np.zeros(0) 
+        self.data_queue = []
+        self.next_i_subvec = 0
         
 
     def send_heartbeat_response(self):
@@ -122,7 +125,7 @@ class Slave(StrategyBase):
         # print(N, M) # test
         
         subvec_length = len(data['subvec'])
-
+        
         # Conputing the first subvec, then get the number of subvecs
         if data['i_subvec'] == 0:
             # self.num_subvecs = int(M/(subvec_length - 1)) + 1
@@ -137,58 +140,62 @@ class Slave(StrategyBase):
         
 
         #for data['i_subvec'] in range(num_subvecs):
-        if data['i_subvec'] < self.num_subvecs - 1:
-            # print(f"data 1:{data['i_subvec']}")
-            pattern_subvec = pattern[data['i_subvec'] * (subvec_length-1) : (data['i_subvec'] + 1) * (subvec_length-1) ]
+        heapq.heappush(self.data_queue, (data['i_subvec'], data))
+        while self.data_queue and self.data_queue[0][0] == self.next_i_subvec:
+            _, data = heapq.heappop(self.data_queue)
+            if data['i_subvec'] < self.num_subvecs - 1:
+                # print(f"data 1:{data['i_subvec']}")
+                pattern_subvec = pattern[data['i_subvec'] * (subvec_length-1) : (data['i_subvec'] + 1) * (subvec_length-1) ]
 
 
-            # print(f"pattern_subvec: {pattern_subvec}")
-            # print(f"sequence: {sequence}")
-            # print(f"up_vec: {up_vec}")
-            # print(f"data['i_subvec']: {data['i_subvec']}")
-            # print(f"data['start_ind']: {data['start_ind']}")
-            # print(f"data['end_ind']: {data['end_ind']}")
-            # print(f"self.client.K: {self.configs['k']}")
-            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'],data['start_ind']) #加了个参数
-            self.previous_bottom_vec = bottom_vec
-            
-            # test
-            right_vec = right_vec.tolist()
+                # print(f"pattern_subvec: {pattern_subvec}")
+                # print(f"sequence: {sequence}")
+                # print(f"up_vec: {up_vec}")
+                # print(f"data['i_subvec']: {data['i_subvec']}")
+                # print(f"data['start_ind']: {data['start_ind']}")
+                # print(f"data['end_ind']: {data['end_ind']}")
+                # print(f"self.client.K: {self.configs['k']}")
+                right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'],data['start_ind']) #加了个参数
+                self.previous_bottom_vec = bottom_vec
+                
+                # test
+                right_vec = right_vec.tolist()
 
-            response_data = {
-                'type': 'fillmatrix',
-                'i_th_pattern': data['i_th_pattern'],
-                'start_ind': data['start_ind'],
-                'end_ind': data['end_ind'],
-                'i_subvec': data['i_subvec'],
-                'subvec': right_vec,
-                'topks': topK_dict,
-                'done': False,
-                kv.TERM : self.term
-            }
-            
-            # TEST
-            print("result test:" , response_data)
-            self.send_fillmatirx(response_data)
+                response_data = {
+                    'type': 'fillmatrix',
+                    'i_th_pattern': data['i_th_pattern'],
+                    'start_ind': data['start_ind'],
+                    'end_ind': data['end_ind'],
+                    'i_subvec': data['i_subvec'],
+                    'subvec': right_vec,
+                    'topks': topK_dict,
+                    'done': False,
+                    kv.TERM : self.term
+                }
+                self.next_i_subvec += 1
+                # TEST
+                print("result test:" , response_data)
+                self.send_fillmatirx(response_data)
 
-        elif data['i_subvec'] == self.num_subvecs - 1:
-            print(f"data 1:{data['i_subvec']}")
-            pattern_subvec = pattern[data['i_subvec'] * (SUBVEC_SIZE-1) :]   #改了 
-            right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'],data['start_ind'])
-            right_vec = right_vec.tolist()
-            response_data = {
-                'type': 'fillmatrix',
-                'i_th_pattern': data['i_th_pattern'],
-                'start_ind': data['start_ind'],
-                'end_ind': data['end_ind'],
-                'i_subvec': data['i_subvec'],
-                'subvec': right_vec,
-                'topks': topK_dict,
-                'done': True,
-                kv.TERM : self.term
-            }
-            print("result test:" , response_data)
-            self.send_fillmatirx(response_data)
+            elif data['i_subvec'] == self.num_subvecs - 1:
+                print(f"data 1:{data['i_subvec']}")
+                pattern_subvec = pattern[data['i_subvec'] * (SUBVEC_SIZE-1) :]   #改了 
+                right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'],data['start_ind'])
+                right_vec = right_vec.tolist()
+                response_data = {
+                    'type': 'fillmatrix',
+                    'i_th_pattern': data['i_th_pattern'],
+                    'start_ind': data['start_ind'],
+                    'end_ind': data['end_ind'],
+                    'i_subvec': data['i_subvec'],
+                    'subvec': right_vec,
+                    'topks': topK_dict,
+                    'done': True,
+                    kv.TERM : self.term
+                }
+                self.next_i_subvec = 0
+                print("result test:" , response_data)
+                self.send_fillmatirx(response_data)
 
      
     def send_fillmatirx(self, data):
