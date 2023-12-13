@@ -78,10 +78,10 @@ class Slave(StrategyBase):
         #             kv.TERM: self.term,
         #             kv.ADDR_LIST: new_addr
         #         }
-        self.client.set_state('S', self.term)
         self.term = data[kv.TERM] 
         self.client.addr_list = data[kv.ADDR_LIST]
         self.master_addr = self.client.addr_list[0]
+        self.client.set_state('S', self.term)
         print(f"New master_addr: {self.master_addr}")
         print(f"New term: {self.term}")
         print(f"New addr_list: {self.client.addr_list}")
