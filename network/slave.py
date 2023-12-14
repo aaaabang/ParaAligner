@@ -129,7 +129,9 @@ class Slave(StrategyBase):
         # Conputing the first subvec, then get the number of subvecs
         if data['i_subvec'] == 0:
             # self.num_subvecs = int(M/(subvec_length - 1)) + 1
-            self.num_subvecs = int(M/(params.SUBVEC_SIZE - 1)) + 1
+            self.num_subvecs = int(M / (params.SUBVEC_SIZE - 1))
+            if M % (params.SUBVEC_SIZE - 1) != 0:
+                self.num_subvecs += 1
         
         print(f"subvec_nums:{self.num_subvecs}" )
 

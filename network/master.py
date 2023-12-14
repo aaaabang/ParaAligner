@@ -72,7 +72,11 @@ class Master(StrategyBase):
                 # print(f"no backup{total_subvec} {self.patterns_sizes}")
 
             total_subvec_number = 0
-            should_subvec_number = int(get_str_length(patterns[i])/(params.SUBVEC_SIZE - 1)) + 1
+            M = get_str_length(patterns[i])
+            should_subvec_number = int(M / (params.SUBVEC_SIZE - 1))
+            if M % (params.SUBVEC_SIZE - 1) != 0:
+                should_subvec_number += 1
+
             j = -1 # i_subvec
             st_subvec = 0
             end_subvec = 0
@@ -336,14 +340,15 @@ class Master(StrategyBase):
                     if i+1 >= len(subvec):
                         break
                     # j = -99:
-                    subvec_list[self.msg_size + (i_subv-1)*(self.msg_size-2) + i] = subvec[i+1]
+                    subvec_list[self.msg_size + (i_subv-1)*(self.msg_size-1) + i] = subvec[i+1]
                     # j = self.msg_size + (i_subv-1)*(self.msg_size-1) + i
                     # print("i_subv*self.msg_size + i",j)
                     # print("i+1",i+1)
                     # print("subvec_list, ", subvec_list)
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
-            # print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
+            if (i_subv == 25):
+                print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
 
 
             if not (self.slaves_states[rank-1]['subvec'] == INT_MIN).any():
@@ -356,6 +361,7 @@ class Master(StrategyBase):
                 files.save_topK(self.topKs[i_th_pattern], i_th_pattern)
                 self.__set_slave_idle(addr)
                 # print("self.job_slave", self.job_slave)
+                # self.visit_queue()
                 del self.job_slave[(i_th_pattern, start_ind, end_ind)]
                 if end_ind >= self.database_size - 1:
                     # fill_matrix done!!!
@@ -404,3 +410,11 @@ class Master(StrategyBase):
                         data = pickle.dumps(data)
                         self.client.send(addr, data)
                 self.client.close()
+
+    def visit_queue(self):  
+        queue_copy = self.receive_queue.queue.copy()
+
+        # 访问队列副本但不处理
+        while queue_copy:
+            item = queue_copy.pop()  # 或者使用 queue_copy.pop()，取决于你想如何处理队列元素的顺序
+            print("queue item", item)

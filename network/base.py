@@ -1,4 +1,5 @@
 import socket, threading
+import traceback
 
 
 class ClientBase:
@@ -17,7 +18,7 @@ class ClientBase:
                 except socket.timeout:
                     pass
                 except Exception as e:
-                    # print(e.with_traceback())
+                    traceback.print_exc()
                     self._closed = True
         threading.Thread(target=recv_thread).start()
 
