@@ -5,4 +5,7 @@
 #SBATCH --time=00:05:00
 #SBATCH --output=SlurmLog_%j.out
 
+export nid=$((RANDOM % 6))
+export tid=$((RANDOM % 10))
+
 srun python3 -u main.py

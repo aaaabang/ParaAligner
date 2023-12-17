@@ -8,3 +8,4 @@ backup/
 output/
 SlurmLog_*
 .nfs*
+results.txt
