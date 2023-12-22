@@ -1,5 +1,5 @@
 {
-  "database": "data/databases/Elegans.txt",
+  "database": "data/txt_db/covid_S.txt",
   "patterns": [
     "data/patterns/test.txt"
   ],
