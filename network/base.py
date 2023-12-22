@@ -13,7 +13,7 @@ class ClientBase:
         def recv_thread():
             while not self._closed:
                 try:
-                    data, addr = self.udp_socket.recvfrom(4096)
+                    data, addr = self.udp_socket.recvfrom(40960)
                     self.recv(addr, data)
                 except socket.timeout:
                     pass

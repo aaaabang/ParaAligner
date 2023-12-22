@@ -83,13 +83,7 @@ class Master(StrategyBase):
             while True:
                 current_subvec_size = (j+1)* (self.msg_size-1) + 1
                 remain_subvec_size = (self.patterns_sizes[i] + 1) - current_subvec_size + 1
-                # print("remain:", remain_subvec_size)
-                # print("curren_subvec: ", current_subvec_size)
-                # print("self pat: ", self.patterns_sizes[i])
                 if(total_subvec_number >= should_subvec_number):
-                    # print("curren_subvec: ", current_subvec_size)
-                    # print("self pat: ", self.patterns_sizes[i])
-
                     break
                 else:
 
@@ -97,14 +91,9 @@ class Master(StrategyBase):
                     if size == 0:
                         break
                     end_subvec = st_subvec + size
-                    # print(f"size:{size} st {st_subvec} end_sub {end_subvec}")
-                    # print(f"total_su{total_subvec}")
 
                     subvec = total_subvec[st_subvec:end_subvec]
                     st_subvec += size - 1
-                    # total_size += size
-                    # print(f"size:{size} total {total_size}")
-                    # print("total", total_subvec_number)
                     total_subvec_number += 1
                     j += 1
 
@@ -114,7 +103,6 @@ class Master(StrategyBase):
                     kv.END: end_ind, 
                     kv.I_SUBVEC: j, 
                     kv.Ith_PATTERN: i,
-                    # kv.TYPE: kv.T_TYPE,
                     kv.TYPE: kv.F_TYPE,
                     kv.TERM: self.term
                 }
@@ -129,7 +117,6 @@ class Master(StrategyBase):
             data = "Heartbeat"
             data = pickle.dumps(data)
             self.client.send(slave['addr'], data)
-            # print(f"Matser Heartbeat sent to {slave['addr']}")
 
         self.last_heartbeat = time.time()
 
@@ -218,7 +205,6 @@ class Master(StrategyBase):
                         slave = self.job_slave[(i_th_pattern, start_ind, end_ind)]# get the address of slave which possesses current chunk[start_ind, end_ind]
                         data = pickle.dumps(job)
                         self.client.send(slave, data)
-                        # print(f"send new job {job} to Slave{slave}")
                     else:
                         self.receive_queue.put(job)
                 except Exception as e:
@@ -261,8 +247,6 @@ class Master(StrategyBase):
             i_topKs = sorted_i_topKs
 
         self.topKs[i_th_pattern] = i_topKs
-
-        # print(self.topKs)
 
         
 
@@ -313,14 +297,6 @@ class Master(StrategyBase):
         elif data[kv.TYPE] == kv.F_TYPE:
 
             # fillmatrix phase
-            # i_subv = data['i_subvec'] # index of the received parts of rightmost column
-            # subvec = data['subvec']
-            # start_ind = data['start_ind']
-            # end_ind = data['end_ind']
-            # done = data['done']
-            # topKs = data['topKs']
-            # keys = [kv.Ith_PATTERN, kv.I_SUBVEC, kv.SUBVEC, kv.START, kv.END, kv.Done, kv.TOPKS]
-            # i_th_pattern, i_subv, subvec, start_ind, end_ind, done, topKs = map(itemgetter(*keys), [data] * len(keys))
             i_th_pattern = data[kv.Ith_PATTERN]
             i_subv = data[kv.I_SUBVEC]
             subvec = data[kv.SUBVEC]
@@ -339,12 +315,7 @@ class Master(StrategyBase):
                 else:
                     if i+1 >= len(subvec):
                         break
-                    # j = -99:
                     subvec_list[self.msg_size + (i_subv-1)*(self.msg_size-1) + i] = subvec[i+1]
-                    # j = self.msg_size + (i_subv-1)*(self.msg_size-1) + i
-                    # print("i_subv*self.msg_size + i",j)
-                    # print("i+1",i+1)
-                    # print("subvec_list, ", subvec_list)
             self.__update_topKs(i_th_pattern, topKs, start_ind, end_ind)
 
             if (i_subv == 25):
@@ -352,7 +323,6 @@ class Master(StrategyBase):
 
 
             if not (self.slaves_states[rank-1]['subvec'] == INT_MIN).any():
-                #print(f"i_pat {i_th_pattern} i_subv {i_subv} len_subvec_list = {(subvec_list)}")
 
                 # whole subvec, i.e rightmost column of a chunck, has been received
                 # ready to send to another slave for work
@@ -360,7 +330,6 @@ class Master(StrategyBase):
                 files.save_block(self.slaves_states[rank-1]['subvec'], i_th_pattern, start_ind, end_ind)
                 files.save_topK(self.topKs[i_th_pattern], i_th_pattern)
                 self.__set_slave_idle(addr)
-                # print("self.job_slave", self.job_slave)
                 # self.visit_queue()
                 del self.job_slave[(i_th_pattern, start_ind, end_ind)]
                 if end_ind >= self.database_size - 1:
@@ -369,14 +338,11 @@ class Master(StrategyBase):
                     return
 
             if end_ind >= self.database_size - 1:
-                # fill_matrix最右一个矩阵块
                 return
             
             data[kv.START] = end_ind + 1
             data[kv.END] = min(end_ind + self.block_size, self.database_size - 1)
-            # job_item = {kv.Ith_PATTERN: i_th_pattern, kv.SUBVEC: subvec, 'start_ind': end_ind + 1, "end_ind": end_ind + self.block_size, 'i_subv': i_subv}
             self.receive_queue.put(data)
-            # print("size queue", self.receive_queue.qsize())
             # queue_copy = self.receive_queue.queue.copy()
 
             # # 访问队列副本但不处理
@@ -393,7 +359,6 @@ class Master(StrategyBase):
         
             self.__set_slave_idle(addr)
 
-            # del self.job_slave[(i_th_pattern, start_ind, end_ind)]
             self.job_slave = dict(filter(lambda item: item[1] != addr, self.job_slave.items()))
             files.save_output(i_th_pattern, alignment, topK_val)
             print(f"{i_th_pattern} pattern get one alignment of topk {topK_val} : {alignment}")

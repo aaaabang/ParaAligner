@@ -23,7 +23,6 @@ class Slave(StrategyBase):
         self.rank = client.rank # rank of this slave 
         self.last_heartbeat_time = time.time()
         self.master_addr = client.master_addr
-        # master_addr = self.client.addr_list[0]
         self.master_addr = self.client.addr_list[0]
         self.term = term      
         self.previous_bottom_vec = np.zeros(0) 
@@ -66,21 +65,10 @@ class Slave(StrategyBase):
                 for addr in new_addr[1:]:
                     self.client.send(addr, data)
                     print(f"restart message {data} have been sent to {addr}")
-            # else:
-            #     self.client.set_state('S', self.term)
-            #     self.term = self.term + 1
-            #     new_addr = [addr for addr in self.client.addr_list if  addr != self.master_addr]
-            #     self.master_addr = new_addr[0]
-            #     self.client.addr_list = new_addr
 
     def handle_restart_command(self, data):
         # 处理从master收到的 remake 命令
         print(f"Received 'restart' message.")
-        # data = {
-        #             kv.TYPE: kv.RESTART,
-        #             kv.TERM: self.term,
-        #             kv.ADDR_LIST: new_addr
-        #         }
         self.term = data[kv.TERM] 
         self.client.addr_list = data[kv.ADDR_LIST]
         self.master_addr = self.client.addr_list[0]
@@ -110,19 +98,12 @@ class Slave(StrategyBase):
         # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
         sequence = read_str(self.client.configs['database'], data['start_ind'], data['end_ind'])
-        # print(f"sequence: {sequence}") # test
 
         pat_len = get_str_length(self.client.configs['patterns'][i_th_pattern])
         pattern = read_str(self.client.configs['patterns'][i_th_pattern], 0, pat_len)
-        
-        # pattern = read_str("data/patterns/test.txt", 0, 16)
-        # pattern = read_str("data/patterns/medium.txt", 0, pat_len)
-        # print(f"pattern: {pattern}") # test
 
         N = len(sequence)
-        M = len(pattern)    
-        
-        # print(N, M) # test
+        M = len(pattern)
         
         subvec_length = len(data['subvec'])
         
@@ -134,29 +115,14 @@ class Slave(StrategyBase):
                 self.num_subvecs += 1
         
         print(f"subvec_nums:{self.num_subvecs}" )
-
-        #如果是第一块, upvec传空, 否则传上一块的最后一行
-        # up_vec = [0,0]
         up_vec = [0 for _ in range(N)] if data['i_subvec'] == 0 else self.previous_bottom_vec
-        # print(len(up_vec)) 
-        
 
-        #for data['i_subvec'] in range(num_subvecs):
         heapq.heappush(self.data_queue, (data['i_subvec'], data))
         while self.data_queue and self.data_queue[0][0] == self.next_i_subvec:
             _, data = heapq.heappop(self.data_queue)
             if data['i_subvec'] < self.num_subvecs - 1:
-                # print(f"data 1:{data['i_subvec']}")
                 pattern_subvec = pattern[data['i_subvec'] * (subvec_length-1) : (data['i_subvec'] + 1) * (subvec_length-1) ]
 
-
-                # print(f"pattern_subvec: {pattern_subvec}")
-                # print(f"sequence: {sequence}")
-                # print(f"up_vec: {up_vec}")
-                # print(f"data['i_subvec']: {data['i_subvec']}")
-                # print(f"data['start_ind']: {data['start_ind']}")
-                # print(f"data['end_ind']: {data['end_ind']}")
-                # print(f"self.client.K: {self.configs['k']}")
                 right_vec, bottom_vec, topK_dict = fill_matrix( data['subvec'], up_vec, data['i_subvec'], sequence, pattern_subvec, self.client.configs['k'],data['start_ind']) #加了个参数
                 self.previous_bottom_vec = bottom_vec
                 
@@ -201,13 +167,11 @@ class Slave(StrategyBase):
 
      
     def send_fillmatirx(self, data):
-        # 将结果发送回 Master
         data = pickle.dumps(data)
         self.client.send(self.master_addr,data)
 
         print(f"Slave {self.rank} sends fillmatrix result to {self.master_addr}")
-        
-    # trace_back(topK, start_s, end_s)
+
     def handle_traceback(self, data):
         # 从Master接收到的数据
         '''
@@ -221,16 +185,13 @@ class Slave(StrategyBase):
         # 从文件系统读对应的sequence, pattern
         i_th_pattern = data['i_th_pattern'] # 0, 1, 2, 3
         sequence_path = self.client.configs['database']
-        # print(f"sequence: {sequence_path}") # test
         pattern_path = self.client.configs['patterns'][i_th_pattern]
-        # print(f"pattern: {pattern_path}") # test
         
         topK = {
             "value": data['topk_value'],
-            # "i_subvec": 0, # TODO
             "xy": data['topk_pos']
         }
-        # TODO
+
         block_size = data['start_ind'] - data['end_ind']
         aligned_p_s, aligned_s_s = trace_back(topK, data['start_ind'], data['end_ind'], sequence_path, pattern_path, i_th_pattern)
 
@@ -240,8 +201,6 @@ class Slave(StrategyBase):
             'i_th_pattern': i_th_pattern,
             'topk_pos': data['topk_pos'],
             'topk_value': data['topk_value'],
-            # 'start_ind': data['start_ind'],
-            # 'end_ind': data['end_ind'],
             'type': kv.T_TYPE,
             kv.TERM : self.term
         }
@@ -259,7 +218,6 @@ class Slave(StrategyBase):
     def iter(self):
 
         self.check_if_master_alive()
-        # handle jobs in the queue
         while not self.job_queue.empty():
             task = self.job_queue.get()
             if task[kv.TERM] < self.term:
@@ -282,9 +240,6 @@ class Slave(StrategyBase):
                 # 处理心跳包
                 self.last_heartbeat_time = time.time()  # 更新最后一次心跳时间
                 self.send_heartbeat_response()
-                # print("Slave received heartbeat from Master")
-            # elif data == 'remake':
-            #     self.handle_remake_command()
             elif data == kv.CLOSE:  
                 print("Slave is closing.")
                 self.client.close()
