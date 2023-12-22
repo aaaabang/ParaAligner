@@ -1,5 +1,5 @@
 from multiprocessing import Process
-from test_main import main
+from main import main
 import json
 
 
