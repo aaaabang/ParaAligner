@@ -23,7 +23,7 @@ Run `./experiment.sh` to perform experiment, all results could be seen in result
 
 Run `./eval.sh` to verify the correctness of our implementation.
 
-Run `run_local.py` to perform experiment on your own computer.
+Run `python3 run_local.py` to perform experiment on your own computer.
 
-You can replace `main.py` with `main_ft.py` in scripts to test for fault tolerance.
+You can replace `main.py` with `main_ft.py` in above scripts to test for fault tolerance by checking the log files.
 
