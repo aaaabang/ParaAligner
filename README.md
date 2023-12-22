@@ -17,7 +17,7 @@ need to run `chmod +x ./ssw_test` to make SSW executable. The same approach appl
 
 If `./ssw_test` could not be used, you can compile it yourself. Source code is [here](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library).
 
-### Command
+### Usage
 
 Run `./experiment.sh` to perform experiment, all results could be seen in results.txt.
 
