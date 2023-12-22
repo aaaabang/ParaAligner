@@ -1,20 +1,16 @@
 #!/bin/bash
 
-# 设置节点和任务数的范围
-start_nodes=1
-end_nodes=12
-start_ntasks_per_node=1
-end_ntasks_per_node=12
+start_nodes=2
+end_nodes=8
+start_ntasks_per_node=2
+end_ntasks_per_node=8
 
-# 循环遍历节点和任务数的范围
-for ((nodes=end_nodes; nodes>=start_nodes; nodes--)); do
-    for ((ntasks_per_node=end_ntasks_per_node; ntasks_per_node>=start_ntasks_per_node; ntasks_per_node--)); do
+for ((nodes=end_nodes; nodes>=start_nodes; nodes-=2)); do
+    for ((ntasks_per_node=end_ntasks_per_node; ntasks_per_node>=start_ntasks_per_node; ntasks_per_node-=2)); do
 
-        # 使用 sed 修改 job.slurm 文件
         sed -i "s/--nodes=[0-9]*/--nodes=$nodes/" job.slurm
         sed -i "s/--ntasks-per-node=[0-9]*/--ntasks-per-node=$ntasks_per_node/" job.slurm
 
-        # 执行原本的脚本内容
         rm ./output/*
         for file in $(find . -maxdepth 1 -type f \( -name "SlurmLog_*" -o -name ".nfs*" \)); do
             rm "$file"
